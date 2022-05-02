@@ -460,7 +460,7 @@ def detect_respiration_cycles(resp_sig, sampling_rate, t_start = 0., output = 'i
     
     return cycles
 
-def ecg_to_hrv(ecg, srate=srate, show = False):
+def ecg_to_hrv(ecg, srate, show = False):
     ecg = -ecg
     if show:
         plt.figure(figsize=(15,10))
