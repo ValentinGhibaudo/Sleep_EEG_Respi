@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from scipy import signal
 import scipy.interpolate
+import xarray as xr
 
 def discrete_FT_homemade(sig, srate):
     t = np.arange(0, sig.size/srate, 1/srate)
@@ -112,7 +113,7 @@ def complex_mw(a , time, n , freq, m = 0):
     cmw = GaussWin * complex_sinewave
     return cmw
 
-def extract_features_from_cmw_family(sig, time_sig, cmw_family_params, return_cmw_family=False):
+def extract_features_from_cmw_family(sig, time_sig, cmw_family_params, return_cmw_family=False, module_method='abs'):
     
     shape = (2, cmw_family_params['range'].size, cmw_family_params['time'].size)
     cmw_family = np.zeros(shape)
@@ -154,11 +155,17 @@ def extract_features_from_cmw_family(sig, time_sig, cmw_family_params, return_cm
         real = np.real(complex_conv)
         imag = np.imag(complex_conv)
         angle = np.angle(complex_conv)
-        module = np.zeros((time_sig.size))
-        for i_bin in range(time_sig.size):
-            module_i_bin = np.sqrt((real[i_bin])**2 + (imag[i_bin])**2)
-            module[i_bin] = module_i_bin
-
+        
+        if module_method == 'old':
+            module = np.zeros((time_sig.size))
+            for i_bin in range(time_sig.size):
+                module_i_bin = np.sqrt((real[i_bin])**2 + (imag[i_bin])**2)
+                module[i_bin] = module_i_bin
+        elif module_method == 'abs':       
+            module = np.abs(complex_conv)**2
+        elif module_method == 'conjugate':
+            module = complex_conv * np.conjugate(complex_conv)
+        
         reals[i,:] = real
         imags[i,:] = imag
         modules[i,:] = module
@@ -184,7 +191,7 @@ def stretch_data(resp_features, nb_point_by_cycle, data, srate):
     times = np.arange(0,np.size(data))/srate
 
     clipped_times, times_to_cycles, cycles, cycle_points, data_stretch_linear = deform_to_cycle_template(
-            data, times, cycle_times, nb_point_by_cycle=nb_point_by_cycle, inspi_ratio=0.4)
+            data, times, cycle_times, nb_point_by_cycle=nb_point_by_cycle, inspi_ratio=0.35)
 
     nb_cycle = data_stretch_linear.shape[0]//nb_point_by_cycle
     phase = np.arange(nb_point_by_cycle)/nb_point_by_cycle
