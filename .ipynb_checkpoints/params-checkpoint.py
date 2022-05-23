@@ -1,6 +1,6 @@
 patients = ['P1','P2','P3','P4','P5','P6','P7','P8','P9','P10']
 
-# patient = 'P1' # Oui
+patient = 'P1' # Oui
 # patient = 'P2' # Oui
 # patient = 'P3' # Oui
 # patient = 'P4' # Oui
