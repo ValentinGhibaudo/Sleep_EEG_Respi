@@ -203,5 +203,3 @@ R     0.082090
 W     0.033582
 
 
-En somme, régler la détection mais ce qui semble sûr c'est que pour une certaine raison... les spindles sont phasés sur la respi
-
