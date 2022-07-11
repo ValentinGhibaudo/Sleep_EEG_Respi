@@ -1,7 +1,7 @@
 patients = ['P1','P2','P3','P4','P5','P6','P7','P9','P10'] # P8 exclu : Pour le sujet P8 : effectivement, on perd le signal de débit de temps en temps et il est artefacté sur la fin de la nuit. De plus, il manque un morceau de la nuit (le tracé parait tronqué)
 
-# patient = 'P1' # Oui, detection respi 5/5
-patient = 'P2' # Oui , detection 2/5
+patient = 'P1' # Oui, detection respi 5/5
+# patient = 'P2' # Oui , detection 2/5
 # patient = 'P3' # Oui, detection 4/5
 # patient = 'P4' # Oui, detection 4/5
 # patient = 'P5' # Oui, detection 2/5
