@@ -1,15 +1,15 @@
-patients = ['P1','P2','P3','P4','P5','P6','P7','P9','P10'] # P8 exclu : Pour le sujet P8 : effectivement, on perd le signal de débit de temps en temps et il est artefacté sur la fin de la nuit. De plus, il manque un morceau de la nuit (le tracé parait tronqué)
+patients = ['P1','P2','P3','P4','P5','P6','P7','P9','P10'] #  P8 exclude because of truncated signal and bad respi signal
 
-patient = 'P1' # Oui, detection respi 5/5
-# patient = 'P2' # Oui , detection 2/5
-# patient = 'P3' # Oui, detection 4/5
-# patient = 'P4' # Oui, detection 4/5
-# patient = 'P5' # Oui, detection 2/5
-# patient = 'P6' # Oui, detection 4/5
-# patient = 'P7' # Oui, detection 5/5
-# patient = 'P8' # Oui # to exclude
-# patient = 'P9' # Oui, detection 4/5
-# patient = 'P10' # Oui, signal mauvais mais outliers bien detectés = 4/5
+patient = 'P1' 
+# patient = 'P2' 
+# patient = 'P3'
+# patient = 'P4' 
+# patient = 'P5' 
+# patient = 'P6' 
+# patient = 'P7' 
+# patient = 'P8' 
+# patient = 'P9' 
+# patient = 'P10' 
 
 labelling_method = 'ia' # set ia or human hypnogram chosen to label signals epochs
 
