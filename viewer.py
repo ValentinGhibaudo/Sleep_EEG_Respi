@@ -3,9 +3,8 @@ import matplotlib.pyplot as plt
 import xarray as xr
 from pyedflib import highlevel
 import glob
-import ghibtools as gt
+import ghibtools as gh
 import mne
-from params import *
 
 def raw_to_da(patient):
     input_file = glob.glob(f'../data/{patient}/*.edf')[0]
@@ -55,12 +54,27 @@ def mne_viewer(patient):
     mne_obj.plot()
     plt.show()
 
-def xr_viewer(patient, start, stop):
+def xr_viewer(patient, chan, start, stop):
     da_mono = raw_to_da(patient)
     da_bipol = eeg_mono_to_bipol(da_mono)
-    da_bipol.loc[:,start:stop].plot.line(x='time', col = 'chan', col_wrap = 4)
+    srate = da_bipol.attrs['srate']
+    sig = da_bipol.loc[chan,start:stop].values
+    tf_sig = gh.tf(sig, srate=srate, f_start = 10, f_stop = 20, n_steps = 40, cycle_start = 4, cycle_stop = 10)
+    print(tf_sig.coords['time'].values.shape)
+
+    t = np.arange(0, sig.size/srate, 1/srate)
+    f = tf_sig.coords['freqs'].values
+
+    fig, axs = plt.subplots(nrows = 2)
+
+    ax = axs[0]
+    ax.plot(t, sig)
+
+    ax = axs[1]
+    ax.pcolormesh(t, f, tf_sig.values)
+
     plt.show()
 
 if __name__ == "__main__":
     mne_viewer('P1')
-    # xr_viewer('P1',119,125)
+    # xr_viewer('P1','Fp1-C3', 119,125)

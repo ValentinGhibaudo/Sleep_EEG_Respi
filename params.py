@@ -1,6 +1,11 @@
-patients = ['P1','P2','P3','P4','P5','P6','P7','P9','P10'] #  P8 exclude because of truncated signal and bad respi signal
+# patients = ['P1','P2','P3','P4','P5','P6','P7','P9','P10','P11','P12','P13','P14','P15','P16','P17','P18','P19','P20'] #  P8 exclude because of truncated signal and bad respi signal
+# patients = ['P11','P12','P13','P14','P15','P16','P18','P19','P20']
+# patients = ['P14','P18']
+# patients = ['P11','P12','P13','P15','P16','P17','P18','P19','P20']
+patients = ['P1','P2','P3','P4','P5','P6','P7','P9','P10','P11','P12','P13','P14','P15','P16','P17','P18','P19','P20'] 
+# patients = ['P14']
 
-patient = 'P1' 
+# patient = 'P1' 
 # patient = 'P2' 
 # patient = 'P3'
 # patient = 'P4' 
@@ -10,6 +15,16 @@ patient = 'P1'
 # patient = 'P8' 
 # patient = 'P9' 
 # patient = 'P10' 
+# patient = 'P11' 
+# patient = 'P12' 
+# patient = 'P13' 
+# patient = 'P14' 
+# patient = 'P15' 
+# patient = 'P16' 
+patient = 'P17' # mismatch staging human vs ia : human staging stoppe à 39120 secs alors que signal dure 39365 secs
+# patient = 'P18' 
+# patient = 'P19' 
+# patient = 'P20' 
 
 labelling_method = 'ia' # set ia or human hypnogram chosen to label signals epochs
 
@@ -33,7 +48,17 @@ rsp_chan = {
     'P7':'DEBIT',
     'P8':'DEBIT',
     'P9':'DEBIT',
-    'P10':'DEBIT'
+    'P10':'DEBIT',
+    'P11':'DEBIT',
+    'P12':'DEBIT',
+    'P13':'DEBIT',
+    'P14':'DEBIT',
+    'P15':'DEBIT',
+    'P16':'DEBIT',
+    'P17':'DEBIT',
+    'P18':'DEBIT',
+    'P19':'DEBIT',
+    'P20':'DEBIT'
 }
 
 rsp_detect_sign = {
@@ -46,5 +71,14 @@ rsp_detect_sign = {
     'P7':'+',
     'P8':'+',
     'P9':'+',
-    'P10':'+'
+    'P10':'+',
+    'P11':'+',
+    'P12':'+',
+    'P13':'+',
+    'P14':'+',
+    'P15':'+',
+    'P16':'+',
+    'P17':'+',
+    'P18':'+',
+    'P20':'+'
 }
