@@ -17,3 +17,9 @@ Tools :
 - deform_tools/py # stretching data tools (time-frequency to phase-frequency trials)
 - respiration_features.py # compute respiration features from respiration cycle detection ouputs
 
+
+
+Pipeline:
+1 - params.py # Key parameters are defined before computation
+2 - preproc.py # Convert .edf raw signals preprocessed signals organized in multi-dimensional and labelized datarray (from Xarray)
+3 - detect_spindles.py # Spindle detection with YASA toolbox from eeg data
