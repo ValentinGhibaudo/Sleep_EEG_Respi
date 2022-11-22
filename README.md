@@ -22,4 +22,6 @@ Tools :
 Pipeline:
 1 - params.py # Key parameters are defined before computation
 2 - preproc.py # Convert .edf raw signals preprocessed signals organized in multi-dimensional and labelized datarray (from Xarray)
-3 - detect_spindles.py # Spindle detection with YASA toolbox from eeg data
+3 - detect_sleep_events.py # Spindle & Slow-waves detection with YASA toolbox from eeg data
+4 - sleep_statistics.py # Compute usual sleep statistics from hypnograms
+5 - extract_sigma_power.py # Compute TF maps of the whole night recordings of all derivations centered on sigma frequencies

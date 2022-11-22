@@ -33,7 +33,7 @@ def rsp_cycle_detection(resp_sig, srate):
 
 for patient in patients:
     print(patient)
-    da = xr.load_dataarray(f'../dataarray/da_N2N3_{patient}.nc').sel(chan = respi_chan)
+    da = xr.load_dataarray(f'../preproc/{patient}.nc').sel(chan = respi_chan) # select respi chan = DEBIT
     rsp = da.values
     t = da.coords['time'].values
     cycles = rsp_cycle_detection(rsp, srate)
