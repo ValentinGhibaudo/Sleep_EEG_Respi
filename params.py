@@ -8,7 +8,6 @@ patient = 'P17'
 labelling_method = 'ia' # set ia or human hypnogram chosen to label signals epochs
 eeg_chans = ['Fp2-C4' , 'Fz-Cz', 'Fp1-C3', 'C4-T4','C3-T3', 'Cz-Pz','T4-O2','T3-O1']
 dérivations = ['Fp2-C4' , 'Fz-Cz', 'Fp1-C3', 'C4-T4','C3-T3', 'Cz-Pz','T4-O2','T3-O1','EOGDt-A1', 'EOGG-A2'] 
-respi_chan = 'DEBIT'
 ecg_chan = 'ECG'
 eog_chans = ['EOGDt-A2','EOGG-A1']
 sel_chans = ['Fp2-C4','C4-T4','T4-O2','Fz-Cz','Cz-Pz','Fp1-C3','C3-T3','T3-O1','DEBIT','THERM','ECG']
@@ -19,53 +18,17 @@ LP = 100
 get_num = lambda x : x.split('P')[1]
 subjects_from_patient = {patient:f'S{get_num(patient)}' for patient in patients}
 
-# SELECT RESPI CHAN TO DETECT RESPIRATION CYCLES
-rsp_chan = {
-    'P1':'DEBIT',
-    'P2':'DEBIT',
-    'P3':'DEBIT',
-    'P4':'DEBIT',
-    'P5':'DEBIT',
-    'P6':'DEBIT',
-    'P7':'DEBIT',
-    'P8':'DEBIT',
-    'P9':'DEBIT',
-    'P10':'DEBIT',
-    'P11':'DEBIT',
-    'P12':'DEBIT',
-    'P13':'DEBIT',
-    'P14':'DEBIT',
-    'P15':'DEBIT',
-    'P16':'DEBIT',
-    'P17':'DEBIT',
-    'P18':'DEBIT',
-    'P19':'DEBIT',
-    'P20':'DEBIT'
-}
-
-
-# REVERSE RESP SIGNAL OR NOT
-rsp_detect_sign = {
-    'P1':'+',
-    'P2':'+',
-    'P3':'+',
-    'P4':'+',
-    'P5':'+',
-    'P6':'+',
-    'P7':'+',
-    'P8':'+',
-    'P9':'+',
-    'P10':'+',
-    'P11':'+',
-    'P12':'+',
-    'P13':'+',
-    'P14':'+',
-    'P15':'+',
-    'P16':'+',
-    'P17':'+',
-    'P18':'+',
-    'P20':'+'
-}
+# RESPI DETECTION PARAMS
+respi_chan = 'DEBIT' # Define which respi channel is used for respiration cycle detection
+clean_resp_features = {
+    'cycle_duration':{'min':1,'max':15},
+    'expi_amplitude':{
+        'P1':0.2,'P2':0.2,'P3':0.5,'P4':0.4,'P5':0.3,'P6':0.1,'P7':0.3,'P8':0.5,'P9':0.3,'P10':0.5,
+        'P11':0.25,'P12':0.15,'P13':0.2,'P14':0.2,'P15':0.25,'P16':0.3,'P17':0.3,'P18':0.1,'P19':0.2,'P20':0.5
+        }
+} # Define absolute criteria of filtering of respiration cycles
+filter_resp = {'lowcut':None, 'highcut':2} # Define how to filter respiration signal before zero crossing detection
+resp_shifting = -0.05 # Shift respi baseline a little bit to detect zero-crossings above baseline noise
 
 
 # SPINDLES DETECTION PARAMS
@@ -83,6 +46,7 @@ sp_thresh = {'corr': 0.69, 'rel_pow': 0.3, 'rms': 1.6} # default = 0.65 , 0.2 , 
 - corr = moving correlation to identify a high correlation between sigma vs broadband. A high sigma correlation will indicate that the changes in sigma
 result in the change in broadband
 """
+
 
 # SLOW WAVES DETECTION PARAMS
 freq_sw = (0.3, 1.5) # Slow wave frequency range, in Hz
