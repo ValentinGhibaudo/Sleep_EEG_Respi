@@ -1,6 +1,7 @@
 # RUN KEYS
 patients = ['P1','P2','P3','P4','P5','P6','P7','P8','P9','P10','P11','P12','P13','P14','P15','P16','P17','P18','P19','P20']
-# patients = ['P1','P2']
+# patients = ['P3','P4','P5','P6','P7','P8','P9','P10','P11','P12','P13','P14','P15','P16','P17','P18','P19','P20']
+# patients = ['P1']
 
 patient = 'P17' 
 
@@ -89,11 +90,13 @@ interesting_variables = {
 
 ### SIGMA COUPLING ###
 transition_ratio = 0.4 # phase point (in %) corresponding to inspi to expi transition on phase-frequency matrix
-nb_point_by_cycle = 1000 # number of phase bins for phase-frequency matrix
-channels_sigma_select =  ['Fp2-C4' , 'Fz-Cz', 'Fp1-C3', 'C4-T4','C3-T3', 'Cz-Pz','T4-O2','T3-O1'] # only sigma extracted in these channels is kept
+nb_point_by_cycle = 100 # number of phase bins for phase-frequency matrix
+channels_sigma_select =  ['Fp2-C4' , 'Fz-Cz', 'Fp1-C3', 'C4-T4', 'C3-T3', 'Cz-Pz','T4-O2','T3-O1'] # only sigma extracted in these channels is kept
 stages_sigma_select =  ['N2','N3'] # only sigma extracted during these sleep stages is kept
 
 
 ### FIGURES
-dpis = 150 # dots per inch = resolution of figs
+dpis = 100 # dots per inch = resolution of figs
+sigma_coupling_chan_means = ['C4-T4','C3-T3'] # global sigma coupling fig with just one matrix by patient will average phase-freq from these chans
+fig_global_cycle_type = 'spindled' # global sigma coupling fig with just one matrix by patient will select this type of tagging of resp cycles
 

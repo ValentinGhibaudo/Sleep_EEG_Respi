@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import yasa
 import xarray as xr
-from params import patients, srate, timestamps_labels
+from params import patients, srate, timestamps_labels, channels_events_select
 
 save = True
 
@@ -21,7 +21,9 @@ for patient in patients: # loop on run keys
     
     for event, event_load in zip(['sw','sp'],['slowwaves','spindles']): # loop on both types of events (slow waves and spindles)
         event_df = pd.read_excel(f'../event_detection/{patient}_{event_load}.xlsx', index_col = 0) # load dataframe of detected events
-        event_times = event_df[timestamps_labels[event]].values # get np array of events timings that summarize the whole events (set in params)
+        events = event_df[event_df['Channel'].isin(channels_events_select)] # keep only events detected in 'channels_events_select'
+        event_times = events[timestamps_labels[event]].values # get np array of events timings that summarize the whole events (set in params)
+
         
         for c, row in rsp_features_staged.iterrows(): # loop on rsp cycles
             start = row['start_time'] # get start time of the cycle

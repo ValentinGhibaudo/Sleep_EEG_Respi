@@ -13,10 +13,11 @@ Pipeline:
 - preproc_staging.py # Convert .edf raw signals preprocessed signals organized in multi-dimensional and labelized datarray (from Xarray) & Sleep staging with YASA on MNE object preprocessed
 - sleep_statistics.py # Compute usual sleep statistics from hypnograms
 - detect_sleep_events.py # Spindle & Slow-waves detection with YASA toolbox from eeg data (running time ~ 40 mins)
-- rsp_detection.py # Detect respiratory cycles and compute features for each cycle
+- rsp_detection.py # Detect respiratory cycles and compute features for each cycle (running time ~5 mins)
 - rsp_tagging_by_sleep.py # Tag resp cycles with corresponding sleep stage, and notion of spindle or slow wave present inside (running time ~ 3 mins)
 - events_coupling.py # Compute phase angles of NegPeak of slow waves and Peak of spindles along respiration phase (running time ~ 3 mins, depending on amount of detected events)
 - events_coupling_stats.py # Polarplot distributions of events according to respiration phase & Circular stats (running time ~ 1 min)
 - events_stats.py # Descriptive statistics on detected events (running time ~ 30 secs)
 - extract_sigma_power.py # Compute TF maps of the whole night recordings of all derivations centered on sigma frequencies (running time ~ 30 mins)
 - sigma_coupling.py # Epoching of time-frequency maps and conversion to phase-frequency maps beginning by inspi (running time ~ 3h)
+- sigma_coupling_figures.py # Generates 4 types of figs more or less detailed of phase-frequency maps 
