@@ -65,7 +65,6 @@ pooled_N_cycles_without_events = {'sp':[],'sw':[]} # dict of lists where number 
 pooled_N_cycles_total = {'sp':[],'sw':[]} # dict of lists where number of total resp cycle considered
 
 for patient in patients:
-    print(patient)
     subject = subjects_from_patient[patient]
 
     rsp_features = pd.read_excel(f'../resp_features/{patient}_resp_features.xlsx',index_col = 0) # load resp features
@@ -136,8 +135,8 @@ ncols = patient_grid.shape[1]
 
 for event_type in event_types: # loop on events types (sp and sw) that will be displayed in columns
 
-    fig, axs = plt.subplots(nrows=nrows, ncols = ncols, subplot_kw=dict(projection = 'polar'), figsize = (15,10), constrained_layout = True, sharex = True, sharey = True) # init polar plot figure
-    fig.suptitle(event_type)
+    fig, axs = plt.subplots(nrows=nrows, ncols = ncols, subplot_kw=dict(projection = 'polar'), figsize = (15,15)) # init polar plot figure
+    fig.suptitle(event_types_titles[event_type])
     
     for row in range(nrows):
         for col in range(ncols):
@@ -175,7 +174,7 @@ for event_type in event_types: # loop on events types (sp and sw) that will be d
             ax.hist(angles_in_radian, bins = bins, density = False, edgecolor = 'black', color = event_types_colors[event_type]) # polar histogram of distribution of angles (in radians)
             ax.set_rticks([]) # remove vector lengths of the plot
             # ax.set_title(f'# {event_type} # p-Rayleigh : {round(p, 4)} - mu : {int(mu)}° - MVL : {round(r, 3)}', fontsize = 15, y = 1.05)
-            ax.set_title(f'{event_types_titles[event_type]} - N = {N_events}', fontsize = 15, y = 1.05) 
+            ax.set_title(f'{subject} - N = {N_events}', fontsize = 15, y = 1.07) 
 
             tick = [ax.get_rmax()*0.995, ax.get_rmax() * 0.99] # will display some markers at the exterior part of the polarplot (indicating respi phase)
             tick_transition_pos = mean_ratio * 360 # angle where ticks will be colored differently = at the inspi to expi transition

@@ -2,12 +2,12 @@
 patients = ['P1','P2','P3','P4','P5','P6','P7','P8','P9','P10','P11','P12','P13','P14','P15','P16','P17','P18','P19','P20']
 # patients = ['P3','P4','P5','P6','P7','P8','P9','P10','P11','P12','P13','P14','P15','P16','P17','P18','P19','P20']
 # patients = ['P1']
+subjects = ['S1','S2','S3','S4','S5','S6','S7','S8','S9','S10','S11','S12','S13','S14','S15','S16','S17','S18','S19','S20']
 
-patient = 'P17' 
 
 # USEFUL LISTS AND VARIABLES
-labelling_method = 'ia' # set ia or human hypnogram chosen to label signals epochs
 eeg_chans = ['Fp2-C4' , 'Fz-Cz', 'Fp1-C3', 'C4-T4','C3-T3', 'Cz-Pz','T4-O2','T3-O1']
+eeg_mono_chans = ['Fp2','Fp1','Fz','C4','C3','Cz','T4','T3','Pz','O1','O2']
 dérivations = ['Fp2-C4' , 'Fz-Cz', 'Fp1-C3', 'C4-T4','C3-T3', 'Cz-Pz','T4-O2','T3-O1','EOGDt-A1', 'EOGG-A2'] 
 ecg_chan = 'ECG'
 eog_chans = ['EOGDt-A2','EOGG-A1']
@@ -30,6 +30,9 @@ clean_resp_features = {
 } # Define absolute criteria of filtering of respiration cycles
 filter_resp = {'lowcut':None, 'highcut':2} # Define how to filter respiration signal before zero crossing detection
 resp_shifting = -0.05 # Shift respi baseline a little bit to detect zero-crossings above baseline noise
+
+# SLEEP STAGING
+chan_sleep_staging = 'C4-T4' # sleep staging computed on this chan
 
 
 # SPINDLES DETECTION PARAMS
