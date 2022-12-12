@@ -1,19 +1,19 @@
 import numpy as np
 import pandas as pd
 import json
-from params import patients, timestamps_labels, channels_events_select, stages_events_select
+from params import subjects, timestamps_labels, channels_events_select, stages_events_select
 
-######
+###### USEFUL FUNCTIONS
 
-def load_resp_features(patient):
-    rsp = pd.read_excel(f'../resp_features/{patient}_resp_features_tagged.xlsx', index_col = 0)
+def load_resp_features(subject):
+    rsp = pd.read_excel(f'../resp_features/{subject}_resp_features_tagged.xlsx', index_col = 0)
     return rsp
 
-def load_events(patient, event_type):
+def load_events(subject, event_type):
     if event_type == 'sp':
-        return pd.read_excel(f'../event_detection/{patient}_spindles.xlsx', index_col = 0)
+        return pd.read_excel(f'../event_detection/{subject}_spindles.xlsx', index_col = 0)
     elif event_type == 'sw':
-        return pd.read_excel(f'../event_detection/{patient}_slowwaves.xlsx', index_col = 0)
+        return pd.read_excel(f'../event_detection/{subject}_slowwaves.xlsx', index_col = 0)
 
 def get_phase_angles(rsp_features, event_times):
     angles_cycles = {} # phase angles of events found in each cycle are stored in a dict (keys = cycles idxs and values = phases angles)
@@ -36,25 +36,24 @@ def save_dict(dictionnary, path):
     with open(path, 'w',encoding='utf-8') as convert_file:
         convert_file.write(file)
 
-#####
+##### COMPUTING
 
-save = True
-
-for patient in patients: # loop on run keys
-    print(patient)
-    rsp_features = load_resp_features(patient) # load rsp features
+for subject in subjects: # loop on run keys
+    print(subject)
+    rsp_features = load_resp_features(subject) # load rsp features
 
     for event_type in ['sp','sw']: # sp = spindles ; sw = slowwaves
-        events = load_events(patient, event_type) # load sp or sw
-        mask_channels = events['Channel'].isin(channels_events_select) # select events only detected in the list "channels_events_select"
-        mask_stages = events['Stage_Letter'].isin(stages_events_select) # select events only detected in the list "stages_events_select"
-        whole_mask = mask_channels & mask_stages # unify the two previous masks (chans & stages)
-        events = events[whole_mask] # keep events of set channels and stages
-        event_times = events[timestamps_labels[event_type]].values # get np array of events timings that summarize the whole events (set in params)
-        phase_angles_rsp = get_phase_angles(rsp_features, event_times) # compute phase angles of event for each respi cycle
-   
-        if save:
-            save_dict(phase_angles_rsp, path = f'../events_coupling/{patient}_{event_type}_phase_angles.txt') # save dict (rsp cycles * phase angles)
+        events = load_events(subject, event_type) # load sp or sw
+        mask_channels = events['Channel'].isin(channels_events_select[event_type]) # select events only detected in the dict "channels_events_select" of event
+        events_of_sel_chans = events[mask_channels] # keep events of set channels
+
+        for stage in stages_events_select: # loop only on events detected in the list "stages_events_select"
+            mask_stages = events_of_sel_chans['Stage_Letter'] == stage # mask on the stage
+            events_of_chan_of_stage = events_of_sel_chans[mask_stages]  # keep event of set stage
+            event_times = events_of_chan_of_stage[timestamps_labels[event_type]].values # get np array of events timings that summarize the whole events (set in params)
+            phase_angles_rsp = get_phase_angles(rsp_features, event_times) # compute phase angles of event for each respi cycle
+    
+            save_dict(phase_angles_rsp, path = f'../events_coupling/{subject}_{event_type}_{stage}_phase_angles.txt') # save dict (rsp cycles * phase angles)
 
 
 

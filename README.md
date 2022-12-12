@@ -10,8 +10,7 @@ Tools :
 
 Pipeline:
 - params.py # Key parameters are defined before computation
-- preproc_staging.py # Convert .edf raw signals preprocessed signals organized in multi-dimensional and labelized datarray (from Xarray) & Sleep staging with YASA on MNE object preprocessed
-- sleep_statistics.py # Compute usual sleep statistics from hypnograms
+- preproc_staging.py # Convert .edf raw signals preprocessed signals organized in multi-dimensional and labelized datarray (from Xarray) & Sleep staging with YASA on MNE object preprocessed & Compute spectrograms + hypnogram & Compute Sleep statistics (running time ~ 30 mins)
 - detect_sleep_events.py # Spindle & Slow-waves detection with YASA toolbox from eeg data (running time ~ 40 mins)
 - rsp_detection.py # Detect respiratory cycles and compute features for each cycle (running time ~5 mins)
 - rsp_tagging_by_sleep.py # Tag resp cycles with corresponding sleep stage, and notion of spindle or slow wave present inside (running time ~ 3 mins)

@@ -2,9 +2,12 @@ import numpy as np
 import xarray as xr
 import matplotlib.pyplot as plt
 import pandas as pd
-from params import srate, respi_chan, filter_resp, resp_shifting, clean_resp_features
-from scipy import signal
+from params import srate, respi_chan, filter_resp, resp_shifting, clean_resp_features, subjects
 from mne.filter import filter_data
+
+"""
+This script allows detection of respiratory cycles and compute features for each cycle, for all subjects
+"""
 
 def mne_filter(sig, srate, lowcut, highcut):
     filtered_sig = filter_data(sig, srate, lowcut, highcut, verbose = False)
@@ -61,40 +64,39 @@ def get_dispersion(vector, n_sd=2, n_q=0.05):
 
 save = True
 
-patients = ['P1','P2','P3','P4','P5','P6','P7','P8','P9','P10','P11','P12','P13','P14','P15','P16','P17','P18','P19','P20']
-# patients = ['P1','P2','P3','P4']
+for subject in subjects:
+    print(subject)
 
-for patient in patients:
-    print(patient)
-
-    resp_signal = xr.open_dataarray(f'../preproc/{patient}.nc').sel(chan = respi_chan).data
-    resp_zscored = zscore(resp_signal)
-    resp_filtered = mne_filter(resp_zscored, srate, filter_resp['lowcut'], filter_resp['highcut'])
-    resp_shifted = resp_filtered + resp_shifting
-    resp_features = get_resp_features(resp_shifted, srate) 
-    mask_duration = (resp_features['cycle_duration'] > clean_resp_features['cycle_duration']['min']) & (resp_features['cycle_duration'] < clean_resp_features['cycle_duration']['max'])
-    mask_expi_amplitude = (resp_features['expi_amplitude'] > clean_resp_features['expi_amplitude'][patient])
+    resp_signal = xr.open_dataarray(f'../preproc/{subject}_bipol.nc').sel(chan = respi_chan).data
+    resp_zscored = zscore(resp_signal) # signal is centered and reduced to set on the same scale for the subjects
+    resp_filtered = mne_filter(resp_zscored, srate, filter_resp['lowcut'], filter_resp['highcut']) # filtering signal
+    resp_shifted = resp_filtered + resp_shifting # Shift respi baseline a little bit to detect zero-crossings above baseline noise
+    resp_features = get_resp_features(resp_shifted, srate) # compute resp features 
+    mask_duration = (resp_features['cycle_duration'] > clean_resp_features['cycle_duration']['min']) & (resp_features['cycle_duration'] < clean_resp_features['cycle_duration']['max']) # keep cycles according to their duration
+    mask_expi_amplitude = (resp_features['expi_amplitude'] > clean_resp_features['expi_amplitude'][subject]) # keep cycles according to their expi amplitude
     keep = mask_duration & mask_expi_amplitude
-    resp_features_clean = resp_features[keep]
+    resp_features_clean = resp_features[keep] # apply masking
     if save:
-        resp_features_clean.to_excel(f'../resp_features/{patient}_resp_features.xlsx')
+        resp_features_clean.to_excel(f'../resp_features/{subject}_resp_features.xlsx')
+
+
     N_before_cleaning = resp_features.shape[0]
-    N = resp_features_clean.shape[0]
-    N_removed_by_cleaning = N_before_cleaning - N
+    N_after_cleaning = resp_features_clean.shape[0]
+    N_removed_by_cleaning = N_before_cleaning - N_after_cleaning
     print('N cycles removed :', N_removed_by_cleaning)
 
+    ### PLOT DISTRIBUTIONS OF RESPIRATION METRICS BEFORE CLEANING
     metrics = np.array(['cycle_duration','inspi_duration','expi_duration','cycle_freq','cycle_ratio','inspi_amplitude','expi_amplitude','inspi_volume','expi_volume']).reshape(3,3)
     nrows = metrics.shape[0]
     ncols = metrics.shape[1]
 
     fig, axs = plt.subplots(nrows = nrows, ncols = ncols , figsize = (20,10), constrained_layout = True)
-    fig.suptitle(f'{patient} - N : {N} cycles')
+    fig.suptitle(f'{subject} - N : {N_before_cleaning} cycles')
     for r in range(nrows):
         for c in range(ncols):
             ax = axs[r, c]
             metric = metrics[r,c]
             vector = resp_features[metric].values
-            N = vector.size
             ax.hist(vector, bins = 200)
             ax.set_title(f'Mean : {np.mean(vector).round(3)} - Median : {np.median(vector).round(3)}')
             ax.set_xlabel(metric)
@@ -107,30 +109,32 @@ for patient in patients:
                     color = 'g'
                 ax.axvline(x = dispersion[estimator], linestyle = '--', linewidth = 0.4, color = color, label = estimator)
             if metric == 'expi_amplitude':
-                ax.axvline(x = clean_resp_features['expi_amplitude'][patient], color = 'r', label = 'remove threshold')
+                ax.axvline(x = clean_resp_features['expi_amplitude'][subject], color = 'r', label = 'remove threshold')
             ax.legend()
     if save:
-        plt.savefig(f'../view_respi_detection/{patient}_resp_detection_distribution', bbox_inches = 'tight')
+        plt.savefig(f'../view_respi_detection/{subject}_resp_detection_distribution', bbox_inches = 'tight')
     plt.show()
     plt.close()
 
+    ### PLOT DISTRIBUTIONS OF RESPIRATION METRICS AFTER CLEANING
     fig, axs = plt.subplots(nrows = nrows, ncols = ncols , figsize = (20,10), constrained_layout = True)
-    fig.suptitle(f'{patient} - N : {N} cycles')
+    fig.suptitle(f'{subject} - N : {N_after_cleaning} cycles')
     for r in range(nrows):
         for c in range(ncols):
             ax = axs[r, c]
             metric = metrics[r,c]
             vector = resp_features_clean[metric].values
-            N = vector.size
             ax.hist(vector, bins = 200)
             ax.set_title(f'Mean : {np.mean(vector).round(3)} - Median : {np.median(vector).round(3)}')
             ax.set_xlabel(metric)
             ax.set_ylabel('N')
 
     if save:
-        plt.savefig(f'../view_respi_detection/{patient}_resp_detection_distribution_clean', bbox_inches = 'tight')
+        plt.savefig(f'../view_respi_detection/{subject}_resp_detection_distribution_clean', bbox_inches = 'tight')
     plt.show()
     plt.close()
+
+    ### PLOT DETECTED CYCLES ON THE RAW SIGNAL
 
     markers = {'start':'r','transition':'g'}
   
@@ -140,10 +144,10 @@ for patient in patients:
     for marker in markers.keys():
         ax.plot(resp_features_clean[marker], resp_zscored[resp_features_clean[marker]], 'o', color = markers[marker], label = f'{marker}')
     ax.legend()
-    ax.set_title(patient)
+    ax.set_title(subject)
 
     if save:
-        plt.savefig(f'../view_respi_detection/{patient}_resp_detection')
+        plt.savefig(f'../view_respi_detection/{subject}_resp_detection')
 
     plt.show()
     plt.close()

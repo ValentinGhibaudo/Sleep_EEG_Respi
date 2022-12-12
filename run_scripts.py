@@ -1,6 +1,6 @@
 import subprocess
 
-program_list = ['events_coupling.py', 'events_coupling_stats.py','events_stats.py']
+program_list = ['rsp_detection.py','rsp_tagging_by_sleep.py']
 
 for program in program_list:
     print(f'Running {program}')
