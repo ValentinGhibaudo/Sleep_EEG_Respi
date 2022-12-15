@@ -67,7 +67,7 @@ save = True
 for subject in subjects:
     print(subject)
 
-    resp_signal = xr.open_dataarray(f'../preproc/{subject}_bipol.nc').sel(chan = respi_chan).data
+    resp_signal = xr.open_dataarray(f'../preproc/{subject}_reref.nc').sel(chan = respi_chan).data
     resp_zscored = zscore(resp_signal) # signal is centered and reduced to set on the same scale for the subjects
     resp_filtered = mne_filter(resp_zscored, srate, filter_resp['lowcut'], filter_resp['highcut']) # filtering signal
     resp_shifted = resp_filtered + resp_shifting # Shift respi baseline a little bit to detect zero-crossings above baseline noise

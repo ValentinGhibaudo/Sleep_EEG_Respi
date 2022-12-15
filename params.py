@@ -1,5 +1,6 @@
 # RUN KEYS
 subjects = ['S1','S2','S3','S4','S5','S6','S7','S8','S9','S10','S11','S12','S13','S14','S15','S16','S17','S18','S19','S20']
+# subjects = ['S8']
 
 
 # USEFUL LISTS AND VARIABLES
@@ -7,13 +8,15 @@ eeg_chans = ['Fp2-C4' , 'Fz-Cz', 'Fp1-C3', 'C4-T4','C3-T3', 'Cz-Pz','T4-O2','T3-
 eeg_mono_chans = ['Fp2','Fp1','Fz','C4','C3','Cz','T4','T3','Pz','O1','O2']
 dérivations = ['Fp2-C4' , 'Fz-Cz', 'Fp1-C3', 'C4-T4','C3-T3', 'Cz-Pz','T4-O2','T3-O1','EOGDt-A1', 'EOGG-A2'] 
 ecg_chan = 'ECG'
-eog_chans = ['EOGDt-A2','EOGG-A1']
+eog_chans = ['EOGDt-A1','EOGG-A2']
 sel_chans = ['Fp2-C4','C4-T4','T4-O2','Fz-Cz','Cz-Pz','Fp1-C3','C3-T3','T3-O1','DEBIT','THERM','ECG']
 stages_labels = ['W','R','N1','N2','N3']
 srate = 256
 
 # SLEEP STAGING
-chan_sleep_staging = 'C4-T4' # sleep staging computed on this chan
+chan_sleep_staging = 'C4' # sleep staging computed on this chan
+mapper_human_stages_to_yasa_stages = {'W  ':'W','N1 ':'N1','N2 ':'N2','N3 ':'N3','REM':'R'} # stages from human hypnogram to yasa corresponding labels
+mapper_yasa_encoding = {'W':0,'N1':1,'N2':2,'N3':3,'R':4} # encoding of str stages to int stages codes
 
 # RESPI DETECTION PARAMS
 respi_chan = 'DEBIT' # Define which respi channel is used for respiration cycle detection
@@ -72,7 +75,7 @@ cycle_stop = 10 # number of morlet wavelet cycles of the f_stop
 # EVENTS TIMESTAMPS LABELS TO SUMMARIZE AN EVENT (SPINDLE or SLOWWAVE) TO ON TIMING
 timestamps_labels = {'sp':'Peak','sw':'NegPeak'} # labels = colnames of the yasa detection output
 # CHANNELS EVENTS TO KEEP
-channels_events_select =  {'sp':['Fp2-C4' , 'Fz-Cz', 'Fp1-C3', 'C4-T4','C3-T3'], 'sw':['Fp2','Fp1','Fz','C4','C3','Cz','T4','T3']} # only events detected in these channels are kept
+channels_events_select =  ['Fp2','Fp1','Fz','C4','C3','Cz','T4','T3','Pz','O1','O2'] # only events detected in these channels are kept
 # STAGE EVENTS TO KEEP
 stages_events_select =  ['N2','N3'] # only events detected during these sleep stages are kept
 

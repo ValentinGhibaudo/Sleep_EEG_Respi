@@ -11,7 +11,7 @@ events_tables = {'sp':[],'sw':[]} # prepare lists for event types to pool events
 
 for subject in subjects:
     for event_type in event_types:
-        events = pd.read_excel(f'../event_detection/{subject}_{event_types_loads[event_type]}.xlsx',index_col = 0) # load events of the subject
+        events = pd.read_excel(f'../event_detection/{subject}_{event_types_loads[event_type]}_reref_human.xlsx',index_col = 0) # load events of the subject
         events.insert(0, 'subject', subject) # add subject label at col 0
         events_tables[event_type].append(events) # add the dataframe of the subject to a list
 
