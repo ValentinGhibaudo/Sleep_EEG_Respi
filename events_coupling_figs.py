@@ -28,7 +28,7 @@ event_types = ['sp','sw'] # run keys for spindles and slow waves
 event_types_titles = {'sp':'Spindles','sw':'Slow-Waves'} # understandable labels for spindles and slowwaves
 bars_colors = {'sp':{'N2':None,'N3':'skyblue'},'sw':{'N2':'forestgreen','N3':'limegreen'}} # colors for polarplots
 bins = 18 # histograms of distribution of events according to resp phase will be distributed in this number of bins
-cycles_ratios = pd.read_excel('../resp_stats/cycles_ratios.xlsx', index_col = 0).set_index(['subject','sleep_stage']) # get cycles ratio for the phase transition in polar plots
+cycles_ratios = pd.read_excel('../resp_stats/cycle_ratios.xlsx', index_col = 0).set_index(['subject','sleep_stage']) # get cycles ratio for the phase transition in polar plots
 
 # FIG TYPE 1 : SPINDLE vs SLOW-WAVE POLAR PLOT FOR EACH PARTICIPANT
 print('FIG 1')

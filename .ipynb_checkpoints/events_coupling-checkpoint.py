@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import json
 import xarray as xr
-from params import subjects, timestamps_labels, channels_events_select, stages_events_select
+from params import subjects, timestamps_labels, channels_events_select, stages_events_select, encoder_events
 
 ###### USEFUL FUNCTIONS
 
@@ -10,11 +10,11 @@ def load_resp_features(subject):
     rsp = pd.read_excel(f'../resp_features/{subject}_resp_features_tagged.xlsx', index_col = 0)
     return rsp
 
-def load_events(subject, event_type):
+def load_events(subject, event_type, encoder_events): # load events according to the yasa hypnogram labelling or human hypnogram labelling
     if event_type == 'sp':
-        return pd.read_excel(f'../event_detection/{subject}_spindles_reref_human.xlsx', index_col = 0)
+        return pd.read_excel(f'../event_detection/{subject}_spindles_reref_{encoder_events}.xlsx', index_col = 0)
     elif event_type == 'sw':
-        return pd.read_excel(f'../event_detection/{subject}_slowwaves_reref_human.xlsx', index_col = 0)
+        return pd.read_excel(f'../event_detection/{subject}_slowwaves_reref_{encoder_events}.xlsx', index_col = 0)
 
 def get_phase_angles(rsp_features, event_times):
     list_of_angles = [] # phase angles of events found in each cycle are stored in a list
@@ -54,7 +54,7 @@ for subject in subjects: # loop on run keys
     rsp_features = load_resp_features(subject) # load rsp features
     
     for event_type in ['sp','sw']: # sp = spindles ; sw = slowwaves
-        events = load_events(subject, event_type) # load sp or sw
+        events = load_events(subject, event_type, encoder_events) # load sp or sw
         mask_channels = events['Channel'].isin(channels_events_select) # select events only detected in the dict "channels_events_select" of event
         events_of_sel_chans = events[mask_channels] # keep events of set channels
         if event_type == 'sp': 

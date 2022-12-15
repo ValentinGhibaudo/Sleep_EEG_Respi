@@ -63,19 +63,21 @@ negative-to-positive peak-to-peak amplitude 140 µV. Criteria 1 and 2 were simil
 
 
 # MORLET WAVELETS PARAMS FOR EXTRACTION OF SIGMA POWER 
-sigma_power_chans = ['Fp2-C4' , 'Fz-Cz', 'Fp1-C3', 'C4-T4','C3-T3', 'Cz-Pz','T4-O2','T3-O1']
+sigma_power_chans = ['Fp2','Fp1','Fz','C4','C3','Cz','T4','T3','Pz','O1','O2']
 f_start = 10 # start frequency of computing, in Hz
 f_stop = 16 # stop frequency of computing, in Hz
 n_step = 30 # number of frequencies computed between f_start and f_stop
-cycle_start = 10 # number of morlet wavelet cycles of the f_start
-cycle_stop = 10 # number of morlet wavelet cycles of the f_stop
+n_cycles = 10 # number of morlet wavelet cycles
 
 
 ### EVENT COUPLING ###
+# ENCODER OF HYPNOGRAM THAT LABELIZED STAGING OF EVENTS (HUMAN or YASA)
+encoder_events = 'human'
 # EVENTS TIMESTAMPS LABELS TO SUMMARIZE AN EVENT (SPINDLE or SLOWWAVE) TO ON TIMING
 timestamps_labels = {'sp':'Peak','sw':'NegPeak'} # labels = colnames of the yasa detection output
 # CHANNELS EVENTS TO KEEP
-channels_events_select =  ['Fp2','Fp1','Fz','C4','C3','Cz','T4','T3','Pz','O1','O2'] # only events detected in these channels are kept
+# channels_events_select =  ['Fp2','Fp1','Fz','C4','C3','Cz','T4','T3','Pz','O1','O2'] # only events detected in these channels are kept
+channels_events_select =  ['Fp2','Fp1','Fz','C4','C3','Cz'] # only events detected in these channels are kept
 # STAGE EVENTS TO KEEP
 stages_events_select =  ['N2','N3'] # only events detected during these sleep stages are kept
 

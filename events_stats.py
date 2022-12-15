@@ -1,6 +1,6 @@
 import pandas as pd
 import seaborn as sns
-from params import subjects, dpis, interesting_variables
+from params import subjects, dpis, interesting_variables, encoder_events
 import matplotlib.pyplot as plt
 
 
@@ -11,7 +11,7 @@ events_tables = {'sp':[],'sw':[]} # prepare lists for event types to pool events
 
 for subject in subjects:
     for event_type in event_types:
-        events = pd.read_excel(f'../event_detection/{subject}_{event_types_loads[event_type]}_reref_human.xlsx',index_col = 0) # load events of the subject
+        events = pd.read_excel(f'../event_detection/{subject}_{event_types_loads[event_type]}_reref_{encoder_events}.xlsx',index_col = 0) # load events of the subject
         events.insert(0, 'subject', subject) # add subject label at col 0
         events_tables[event_type].append(events) # add the dataframe of the subject to a list
 
@@ -21,7 +21,10 @@ for event_type in event_types:
     events_df[event_type].describe()[interesting_variables[event_type]].to_excel(f'../events_stats/{event_type}_description.xlsx') # save estimators for the event type
     events_df[event_type].groupby('Channel').mean(numeric_only=True)[interesting_variables[event_type]].to_excel(f'../events_stats/{event_type}_gby_chan.xlsx') # save estimators for chan effet on the event
     events_df[event_type].groupby('Stage_Letter').mean(numeric_only=True)[interesting_variables[event_type]].to_excel(f'../events_stats/{event_type}_gby_stage.xlsx') # save estimators for stage effet on the event
-
+    
+    
+    
+# FIG : BARPLOT OF PROPORTION OF EVENTS IN STAGES or CHANNELS 
 fig, axs = plt.subplots(nrows = 2, ncols = 2, figsize = (15,8), constrained_layout = True)
 
 for row, event_type in enumerate(event_types):
@@ -48,7 +51,7 @@ for row, event_type in enumerate(event_types):
 plt.savefig('../events_stats/barplots_events.tif', format = 'tif', dpi = dpis, bbox_inches = 'tight')
 plt.close()
 
-
+# FIG x 2 : BOXPLOT OF PROPORTION OF EFFECT OF CHANNEL or STAGE ON THE EVENTS FEATURES 
 for event_type in event_types:
     df_boxplot = events_df[event_type]
     fig, axs = plt.subplots(nrows = 2, ncols = len(interesting_variables[event_type]), figsize = (20,5), constrained_layout = True) # boxplot effects of stage or chan on events params
