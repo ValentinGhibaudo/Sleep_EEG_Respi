@@ -30,4 +30,4 @@ Viewers :
 - viewer_respi.py # Viewer of raw resp signal with detected inspi and expi points (one subject run)
 
 Tools : 
-- deform_tools/py # stretching data tools (time-frequency to phase-frequency sigma maps)
+- deform_tools.py # stretching data tools (time-frequency to phase-frequency sigma maps)

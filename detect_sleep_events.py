@@ -20,10 +20,16 @@ for subject in subjects:
             print(event_type)
             
             if event_type == 'spindle':
-                detec = yasa.spindles_detect(data=data_eeg, sf=srate, ch_names=eeg_mono_chans,freq_sp=freq_sp, duration=sp_duration, min_distance=sp_min_distance, thresh=sp_thresh, multi_only=False, remove_outliers=True, hypno = hypno_upsampled_int, include = (0,1,2,3,4)) # detection spindles
+                detec = yasa.spindles_detect(data=data_eeg, sf=srate, ch_names=eeg_mono_chans,freq_sp=freq_sp,
+                                             duration=sp_duration, min_distance=sp_min_distance, thresh=sp_thresh,
+                                             multi_only=False, remove_outliers=True, hypno = hypno_upsampled_int,
+                                             include = (0,1,2,3,4)) # detection spindles
                 destination_file = f'../event_detection/{subject}_spindles_reref_{encoder}.xlsx'
             elif event_type == 'slow_wave':
-                detec = yasa.sw_detect(data=data_eeg, sf=srate, ch_names=eeg_mono_chans, hypno=hypno_upsampled_int, include=(0,1,2,3,4), freq_sw=freq_sw, dur_neg=sw_dur_neg, dur_pos=sw_dur_pos, amp_neg=sw_amp_neg, amp_pos=sw_amp_neg, amp_ptp=sw_amp_ptp, coupling=True, remove_outliers=True, verbose=False) # detection slow-waves
+                detec = yasa.sw_detect(data=data_eeg, sf=srate, ch_names=eeg_mono_chans, hypno=hypno_upsampled_int,
+                                       include=(0,1,2,3,4), freq_sw=freq_sw, dur_neg=sw_dur_neg, dur_pos=sw_dur_pos,
+                                       amp_neg=sw_amp_neg, amp_pos=sw_amp_neg, amp_ptp=sw_amp_ptp, coupling=True,
+                                       remove_outliers=True, verbose=False) # detection slow-waves
                 destination_file = f'../event_detection/{subject}_slowwaves_reref_{encoder}.xlsx'
 
             events = detec.summary() # get results summary

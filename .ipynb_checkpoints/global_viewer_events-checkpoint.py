@@ -1,31 +1,51 @@
 import pandas as pd
 import xarray as xr
 import matplotlib.pyplot as plt
-from params import eeg_mono_chans
+import numpy as np
+from params import eeg_chans, eeg_mono_chans, timestamps_labels
+
 
 subject = 'S1'
+start = 20000
+stop = 21000
 
-da = xr.open_dataarray(f'../preproc/{subject}_reref.nc')
-spindles = pd.read_excel(f'../event_detection/{subject}_spindles.xlsx', index_col = 0)
-slow_waves = pd.read_excel(f'../event_detection/{subject}_slowwaves.xlsx', index_col = 0)
 
-da_eeg = da.sel(chan = eeg_mono_chans)
-time = da_eeg.coords['time'].values
+chans = {'sp':eeg_chans, 'sw':eeg_mono_chans}
+event_types = ['sp','sw']
+event_types_clean = {'sp':'spindles','sw':'slowwaves'}
+da_type = {'sp':'bipol','sw':'reref'}
+colors = {'sp':'r', 'sw':'k'}
 
-spindles_peaks = (spindles['Peak'].values * srate).astype(int)
-slow_waves_peaks = (slow_waves['NegPeak'].values * srate).astype(int)
+events_df = {}
+events_da = {}
+for event_type in event_types:
+    events_da[event_type] =  xr.open_dataarray(f'../preproc/{subject}_{da_type[event_type]}.nc').sel(chan = chans[event_type], time = slice(start,stop))
+    events_df[event_type] = pd.read_excel(f'../event_detection/{subject}_{event_types_clean[event_type]}_reref_yasa.xlsx', index_col = 0)
 
-shift = -5 # shifting in microvolts
+time = events_da['sp'].coords['time'].values
 
-fig, ax = plt.subplots(figsize = (20,15))
+shift = -100 # shifting in microvolts
 
-for i, channel in enumerate(eeg_mono_chans):
-    sig_raw = da.sel(chan = channel).values
-    sig = sig_raw - i * shift
-    ax.plot(time, sig, linewidth = 0.6, label = channel)
-    ax.plot(time[spindles_peaks], sig[spindles_peaks], 'o', color = 'r', label = 'spindle')
-    ax.plot(time[slow_waves_peaks], sig[slow_waves_peaks], 'o', color = 'g', label = 'slow-wave')
-ax.set_xlim(0,30)
-ax.legend()
+fig, axs = plt.subplots(nrows = 2, figsize = (20,15), sharex = True, sharey = True)
+fig.subplots_adjust(hspace = 0)
+
+for subplot, event_type in enumerate(event_types):
+    events = events_df[event_type]
+    channels = chans[event_type]
+    ax = axs[subplot]
+
+    for i, channel in enumerate(channels):
+        event_chan = events[events['Channel'] == channel]
+        event_times = event_chan[timestamps_labels[event_type]].values
+        event_sliced = event_times[(event_times >= start) & (event_times < stop)]
+
+        sig_raw = events_da[event_type].sel(chan = channel).values
+        sig = sig_raw + i * shift
+
+        ax.plot(time, sig, linewidth = 0.8, label = channel)
+        ax.plot(event_sliced, sig[np.where(np.isin(time, event_sliced))[0]], 'o', color = colors[event_type])
+        ax.set_ylabel(da_type[event_type])
+
+    ax.legend()
     
 plt.show()

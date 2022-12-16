@@ -5,7 +5,14 @@ from scipy import signal
 from params import subjects, eeg_mono_chans, srate, f_start, f_stop, n_step, n_cycles, sigma_power_chans
 
 # FUNCTIONS 
-def complex_mw(a , time, n_cycles , freq, m = 0):
+def complex_mw(a , time, n_cycles , freq, m = 0): 
+    """
+    a = amplitude of the wavelet
+    time = time vector of the wavelet
+    n_cycles = number of cycles in the wavelet
+    freq = frequency of the wavelet
+    m = 
+    """
     s = n_cycles / (2 * np.pi * freq)
     GaussWin = a * np.exp( -(time - m)** 2 / (2 * s**2)) # real gaussian window
     complex_sinewave = np.exp(1j * 2 *np.pi * freq * time) # complex sinusoidal signal
@@ -38,6 +45,8 @@ def compute_tf(sig, srate, f_start, f_stop, n_step, n_cycles, wavelet_duration =
             module = np.abs(complex_conv) # abs method without squaring (more "real")
             
         tf.loc[fi,:] = module
+        
+    
 
     return tf
 
@@ -49,7 +58,7 @@ for subject in subjects:
     data_eeg = data.sel(chan = eeg_mono_chans) # keep only eeg data
     
     sigma_power = None 
-    for computed_chan in sigma_power_chans: # loop on parametred chans
+    for computed_chan in sigma_power_chans: # loop on set chans
         print(computed_chan)
         sig = data_eeg.sel(chan = computed_chan).values # select sig from chan
         whole_tf = compute_tf(sig, srate, f_start, f_stop, n_step, n_cycles) # compute tf with set params

@@ -11,6 +11,36 @@ This script allows detection of respiratory cycles and compute features for each
 
 def mne_filter(sig, srate, lowcut, highcut):
     filtered_sig = filter_data(sig, srate, lowcut, highcut, verbose = False)
+
+#     btype = 'bandpass'
+    
+#     if btype in ('bandpass', 'bandstop'):
+#         band = [lowcut, highcut]
+#         assert len(band) == 2
+#         Wn = [e / srate * 2 for e in band]
+#     else:
+        
+#         Wn = float(lowcut) / srate * 2
+    
+#     filter_mode = 'ba'
+#     filter_mode = 'sos'
+    
+#     ftype = 'butter'
+#     ftype = 'bessel'
+    
+#     N = 1
+    
+    
+#     b, a = scipy.signal.iirfilter(N, Wn, analog=False, btype=btype, ftype=ftype, output=filter_mode)
+#     filtered_traces = scipy.signal.filtfilt(b, a, traces_chunk, axis=0)
+    
+#     sos = scipy.signal.iirfilter(N, Wn, analog=False, btype=btype, ftype=ftype, output=filter_mode)
+#     filtered_traces = scipy.signal.sosfiltfilt(sos, traces_chunk, axis=0)
+    
+    
+    
+    
+    
     return filtered_sig
 
 def detect_zerox(sig):
@@ -41,8 +71,12 @@ def get_cycle_features(zerox, sig, srate):
             expi_amplitude = np.max(np.abs(sig[transition:stop]))
             inspi_volume = np.trapz(np.abs(sig[start:transition]))
             expi_volume = np.trapz(np.abs(sig[transition:stop]))
-            features.append([start, transition , stop, start_t, transition_t, stop_t, cycle_duration, inspi_duration, expi_duration, cycle_freq, cycle_ratio, inspi_amplitude, expi_amplitude, inspi_volume, expi_volume])
-    df_features = pd.DataFrame(features, columns = ['start','transition','stop','start_time','transition_time','stop_time', 'cycle_duration','inspi_duration','expi_duration','cycle_freq','cycle_ratio','inspi_amplitude','expi_amplitude','inspi_volume','expi_volume'])
+            features.append([start, transition , stop, start_t, transition_t, stop_t, cycle_duration,
+                             inspi_duration, expi_duration, cycle_freq, cycle_ratio, inspi_amplitude,
+                             expi_amplitude, inspi_volume, expi_volume])
+    df_features = pd.DataFrame(features, columns = ['start','transition','stop','start_time','transition_time',
+                                                    'stop_time','cycle_duration','inspi_duration','expi_duration','cycle_freq','cycle_ratio',
+                                                    'inspi_amplitude','expi_amplitude','inspi_volume','expi_volume'])
     return df_features
 
 def zscore(sig):

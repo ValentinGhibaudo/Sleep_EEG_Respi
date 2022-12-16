@@ -39,6 +39,8 @@ def load_dict(path):
 def flatten_2d_list(list_2d):
     return [item for sublist in list_2d for item in sublist]
 
+
+
 pooled_angles = load_dict('../events_coupling/pooled_angles.txt') # load pooled angles from subjects
 event_types_titles = {'sp':'Spindles','sw':'Slow-Waves'} # understandable labels for spindles and slowwaves
 subjects_rows = subjects + ['all pooled'] # append an "all pooled" subject

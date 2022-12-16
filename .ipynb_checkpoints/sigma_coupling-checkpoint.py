@@ -36,13 +36,16 @@ for patient in patients:
                 phase_freq_sigma = gh.init_da({'chan':chan_list,'cycle' : cycles, 'freq': morlet_sigma.coords['freq'].values , 'point':np.arange(0,nb_point_by_cycle,1)}) # init xarray 
             phase_freq_sigma.loc[:, cycle, : , :] = data_of_the_cycle # phase-freq map is stored in xarray
         
-        new_rsp_features = rsp_features[rsp_features.index.isin(list(cycles))] # one or two last cycles could be removed by deform tool
+        # new_rsp_features = rsp_features[rsp_features.index.isin(list(cycles))] # one or two last cycles could be removed by deform tool
+        new_rsp_features = rsp_features.iloc[cycles,:]
         new_event_tagging = list(new_rsp_features.loc[:,'Spindle_Tag'].values) # keep tagging
         
         phase_freq_sigma_concat.append(phase_freq_sigma)
 
     phase_freq_sigma_concat = xr.concat(phase_freq_sigma_concat, dim = 'chan') # concat the two products
-    phase_freq_sigma_concat = phase_freq_sigma_concat.assign_attrs({'cycle_tagging':new_event_tagging}) # store cycle tagging by events (1 if resp cycle have spindle(s) inside or 0 if not)
+    # phase_freq_sigma_concat = phase_freq_sigma_concat.assign_attrs({'cycle_tagging':new_event_tagging}) # store cycle tagging by events (1 if resp cycle have spindle(s) inside or 0 if not)
+    
+    phase_freq_sigma_concat.attrs['cycle_tagging'] = new_event_tagging # store cycle tagging by events (1 if resp cycle have spindle(s) inside or 0 if not)
 
     if save:
         phase_freq_sigma_concat.to_netcdf(f'../sigma_coupling/{patient}_phase_freq_sigma.nc') # save this 4 D xarray : chan * cycle * freq * time

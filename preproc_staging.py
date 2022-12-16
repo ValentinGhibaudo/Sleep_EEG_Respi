@@ -110,7 +110,7 @@ for subject in subjects:
     metadata = pd.Series(data, index=index).to_frame().T # metadata
     
     # CROP
-    crop_duration_at_beginning = (datetime.strptime(light_times.loc[subject, 'light out'], "%H:%M:%S") - datetime.strptime(light_times.loc[subject, 'recording start time'], "%H:%M:%S")).seconds # get n seconds to remove a beginning according to light out
+    crop_duration_at_beginning = (datetime.strptime(light_times.loc[subject, 'light out'], "%H:%M:%S") - datetime.strptime(light_times.loc[subject, 'recording start time'], "%H:%M:%S")).seconds # get n seconds to remove at beginning according to light out
     tmin = crop_duration_at_beginning # tmin = light out time
     if light_times.loc[subject, 'light on before stop recording'] == 'yes': # if light on is before stop recording
         crop_duration_at_end = (datetime.strptime(light_times.loc[subject, 'recording stop time'], "%H:%M:%S") - datetime.strptime(light_times.loc[subject, 'light on'], "%H:%M:%S")).seconds # get n seconds to remove at end according to light on

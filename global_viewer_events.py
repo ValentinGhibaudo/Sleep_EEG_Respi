@@ -6,8 +6,8 @@ from params import eeg_chans, eeg_mono_chans, timestamps_labels
 
 
 subject = 'S1'
-start = 9000
-stop = 9300
+start = 20000
+stop = 21000
 
 
 chans = {'sp':eeg_chans, 'sw':eeg_mono_chans}
@@ -20,7 +20,7 @@ events_df = {}
 events_da = {}
 for event_type in event_types:
     events_da[event_type] =  xr.open_dataarray(f'../preproc/{subject}_{da_type[event_type]}.nc').sel(chan = chans[event_type], time = slice(start,stop))
-    events_df[event_type] = pd.read_excel(f'../event_detection/{subject}_{event_types_clean[event_type]}.xlsx', index_col = 0)
+    events_df[event_type] = pd.read_excel(f'../event_detection/{subject}_{event_types_clean[event_type]}_reref_yasa.xlsx', index_col = 0)
 
 time = events_da['sp'].coords['time'].values
 

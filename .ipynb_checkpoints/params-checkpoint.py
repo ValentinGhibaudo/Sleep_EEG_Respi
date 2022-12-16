@@ -21,7 +21,7 @@ mapper_yasa_encoding = {'W':0,'N1':1,'N2':2,'N3':3,'R':4} # encoding of str stag
 # RESPI DETECTION PARAMS
 respi_chan = 'DEBIT' # Define which respi channel is used for respiration cycle detection
 clean_resp_features = {
-    'cycle_duration':{'min':1,'max':15},
+    'cycle_duration':{'min':1,'max':15}, # secs
     'expi_amplitude':{
         'S1':0.2,'S2':0.2,'S3':0.5,'S4':0.4,'S5':0.3,'S6':0.1,'S7':0.3,'S8':0.5,'S9':0.3,'S10':0.5,
         'S11':0.25,'S12':0.15,'S13':0.2,'S14':0.2,'S15':0.25,'S16':0.3,'S17':0.3,'S18':0.1,'S19':0.2,'S20':0.5

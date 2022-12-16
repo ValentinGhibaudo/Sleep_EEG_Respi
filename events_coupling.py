@@ -27,17 +27,8 @@ def get_phase_angles(rsp_features, event_times):
             events_times_of_the_cycle = event_times[mask_of_the_cycle] # keep the events of the cycle
             relative_times = (events_times_of_the_cycle - start) / duration # = time after start / duration = relative times between 0 and 1
             phase_angles = relative_times * 2*np.pi # relative times to phase angles between 0 and 2Pi
-            list_of_angles.append(phase_angles)
-            
-    pooled_angles = []
-    for element in list_of_angles:
-        if type(element) is float: # if element is just a float, it is appended to a list
-            pooled_angles.append(element)
-        else:
-            for angle in element: # else, looping on angles of the element variable
-                pooled_angles.append(angle)
-        
-    return np.array(pooled_angles)
+            list_of_angles.extend(phase_angles)
+    return np.array(list_of_angles)
 
 def save_dict(dictionnary, path):
     file = json.dumps(dictionnary) # create json object from dictionary

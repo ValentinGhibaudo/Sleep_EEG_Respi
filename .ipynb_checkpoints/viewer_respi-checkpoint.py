@@ -4,9 +4,9 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from params import srate, respi_chan
 
-patient = 'P15'
+patient = 'S1'
 
-resp_signal = xr.open_dataarray(f'../preproc/{patient}.nc').sel(chan = respi_chan).data
+resp_signal = xr.open_dataarray(f'../preproc/{patient}_reref.nc').sel(chan = respi_chan).data
 resp_features = pd.read_excel(f'../resp_features/{patient}_resp_features.xlsx', index_col = 0)
 
 markers = {'start':'r','transition':'g'}
