@@ -1,6 +1,6 @@
 # RUN KEYS
 subjects = ['S1','S2','S3','S4','S5','S6','S7','S8','S9','S10','S11','S12','S13','S14','S15','S16','S17','S18','S19','S20']
-# subjects = ['S8']
+# subjects = ['S1']
 
 
 # USEFUL LISTS AND VARIABLES
@@ -63,11 +63,14 @@ negative-to-positive peak-to-peak amplitude 140 µV. Criteria 1 and 2 were simil
 
 
 # MORLET WAVELETS PARAMS FOR EXTRACTION OF SIGMA POWER 
-sigma_power_chans = ['Fp2','Fp1','Fz','C4','C3','Cz','T4','T3','Pz','O1','O2']
+decimate_factor = 5 # down sample sig before tf computation for faster computing and less memory used
+srate_down = srate / decimate_factor 
+sigma_power_chans = ['Fp2','Fp1','Fz','C4','C3','Cz']
 f_start = 10 # start frequency of computing, in Hz
 f_stop = 16 # stop frequency of computing, in Hz
-n_step = 30 # number of frequencies computed between f_start and f_stop
-n_cycles = 10 # number of morlet wavelet cycles
+n_step = 40 # number of frequencies computed between f_start and f_stop
+n_cycles = 20 # number of morlet wavelet cycles
+amplitude_exponent = 2 # raise factor to amplify values 
 
 
 ### EVENT COUPLING ###
@@ -77,7 +80,7 @@ encoder_events = 'human'
 timestamps_labels = {'sp':'Peak','sw':'NegPeak'} # labels = colnames of the yasa detection output
 # CHANNELS EVENTS TO KEEP
 # channels_events_select =  ['Fp2','Fp1','Fz','C4','C3','Cz','T4','T3','Pz','O1','O2'] # only events detected in these channels are kept
-channels_events_select =  ['Fp2','Fp1','Fz','C4','C3','Cz'] # only events detected in these channels are kept
+channels_events_select =  ['Cz'] # only events detected in these channels are kept
 # STAGE EVENTS TO KEEP
 stages_events_select =  ['N2','N3'] # only events detected during these sleep stages are kept
 
@@ -90,13 +93,13 @@ interesting_variables = {
 
 ### SIGMA COUPLING ###
 transition_ratio = 0.4 # phase point (in %) corresponding to inspi to expi transition on phase-frequency matrix
-nb_point_by_cycle = 100 # number of phase bins for phase-frequency matrix
-channels_sigma_select =  ['Fp2-C4' , 'Fz-Cz', 'Fp1-C3', 'C4-T4', 'C3-T3', 'Cz-Pz','T4-O2','T3-O1'] # only sigma extracted in these channels is kept
+nb_point_by_cycle = 40 # number of phase bins for phase-frequency matrix
+channels_sigma_select =  ['Fp2','Fp1','Fz','C4','C3','Cz'] # only sigma extracted in these channels is kept
 stages_sigma_select =  ['N2','N3'] # only sigma extracted during these sleep stages is kept
 
 
 ### FIGURES
 dpis = 100 # dots per inch = resolution of figs
-sigma_coupling_chan_means = ['C4-T4','C3-T3'] # global sigma coupling fig with just one matrix by patient will average phase-freq from these chans
-fig_global_cycle_type = 'spindled' # global sigma coupling fig with just one matrix by patient will select this type of tagging of resp cycles
+sigma_coupling_chan = 'Cz' # global sigma coupling fig with just one matrix by patient will average phase-freq from these chans
+fig_global_cycle_type = 'diff' # global sigma coupling fig with just one matrix by patient will select this type of tagging of resp cycles
 

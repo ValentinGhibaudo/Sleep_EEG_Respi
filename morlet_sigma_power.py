@@ -2,11 +2,14 @@ import numpy as np
 import ghibtools as gh
 import xarray as xr
 from scipy import signal
-from params import subjects, eeg_mono_chans, srate, f_start, f_stop, n_step, n_cycles, sigma_power_chans
+from params import subjects, eeg_mono_chans, srate, f_start, f_stop, n_step, n_cycles, sigma_power_chans, decimate_factor, srate_down, amplitude_exponent
 
 # FUNCTIONS 
-def complex_mw(a , time, n_cycles , freq, m = 0): 
+def complex_mw(time, n_cycles , freq, a= 1, m = 0): 
     """
+    Create a complex morlet wavelet by multiplying a gaussian window to a complex sinewave of a given frequency
+    
+    ------------------------------
     a = amplitude of the wavelet
     time = time vector of the wavelet
     n_cycles = number of cycles in the wavelet
@@ -19,36 +22,42 @@ def complex_mw(a , time, n_cycles , freq, m = 0):
     cmw = GaussWin * complex_sinewave
     return cmw
 
-def compute_tf(sig, srate, f_start, f_stop, n_step, n_cycles, wavelet_duration = 2, squaring=True, increase = 'linear', extracted_feature = 'power'):
-
-    a = 1 # amplitude of the cmw
-    m = 0 # max time point of the cmw
-    time_cmw = np.arange(-wavelet_duration,wavelet_duration,1/srate) # time vector of the cmw
-
-    range_freqs = np.linspace(f_start,f_stop,n_step) 
-
-    time_sig = np.arange(0, sig.size / srate , 1 / srate)
-
-    shape = (range_freqs.size , time_sig.size)
-    data = np.zeros(shape)
-    dims = ['freqs','time']
-    coords = {'freqs':range_freqs, 'time':time_sig}
-    tf = xr.DataArray(data = data, dims = dims, coords = coords)
+def morlet_family(srate, f_start, f_stop, n_step, n_cycles):
+    """
+    Create a family of morlet wavelets
     
-    for i, fi in enumerate(range_freqs):
-        cmw_f = complex_mw(a=a, time=time_cmw, n_cycles=n_cycles, freq=fi, m = m) # make the complex mw
-        complex_conv = signal.convolve(sig, cmw_f, mode = 'same')
+    ------------------------------
+    srate : sampling rate
+    f_start : lowest frequency of the wavelet family
+    f_stop : highest frequency of the wavelet family
+    n_step : number of frequencies from f_start to f_stop
+    n_cycles : number of waves in the wavelet
+    """
+    tmw = np.arange(-5,5,1/srate)
+    freqs = np.linspace(f_start,f_stop,n_step) 
+    mw_family = np.zeros((freqs.size, tmw.size), dtype = 'complex')
+    for i, fi in enumerate(freqs):
+        mw_family[i,:] = complex_mw(tmw, n_cycles = n_cycles, freq = fi)
+    return freqs, mw_family
 
-        if squaring:
-            module = np.abs(complex_conv) ** 2
-        else:
-            module = np.abs(complex_conv) # abs method without squaring (more "real")
-            
-        tf.loc[fi,:] = module
-        
+def compute_tf(sig, srate, f_start, f_stop, n_step, n_cycles, amplitude_exponent=1):
+    """
+    Compute time-frequency matrix by convoluting wavelets on a signal
     
-
-    return tf
+    ------------------------------
+    sig : the signal 
+    srate : sampling rate
+    f_start : lowest frequency of the wavelet family
+    f_stop : highest frequency of the wavelet family
+    n_step : number of frequencies from f_start to f_stop
+    n_cycles : number of waves in the wavelet
+    amplitude_exponent : amplitude values extracted from the length of the complex vector will be raised to this exponent factor
+    """
+    freqs, family = morlet_family(srate, f_start = f_start, f_stop = f_stop, n_step = n_step, n_cycles = n_cycles)
+    sigs = np.tile(sig, (n_step,1))
+    tf = signal.fftconvolve(sigs, family, mode = 'same', axes = 1)
+    power = np.abs(tf) ** amplitude_exponent
+    return freqs , power
 
 
 # RUN 
@@ -61,12 +70,13 @@ for subject in subjects:
     for computed_chan in sigma_power_chans: # loop on set chans
         print(computed_chan)
         sig = data_eeg.sel(chan = computed_chan).values # select sig from chan
-        whole_tf = compute_tf(sig, srate, f_start, f_stop, n_step, n_cycles) # compute tf with set params
+        sig_down = signal.decimate(sig, q=decimate_factor) # down sample sig before tf computation for faster computing and less memory used
+        freqs , whole_tf = compute_tf(sig_down, srate_down, f_start, f_stop, n_step, n_cycles, amplitude_exponent) # compute tf with set params
         if sigma_power is None:
-            sigma_power = gh.init_da({'chan':sigma_power_chans, 'freq':whole_tf.coords['freqs'].values, 'time':whole_tf.coords['time'].values}) # init dataarray with desired shapes
-        sigma_power.loc[computed_chan,:,:] = whole_tf.values # fill xarray at the chan with the whole night tf map of the chan
+            sigma_power = gh.init_da({'chan':sigma_power_chans, 'freq':freqs, 'time':np.arange(0, sig_down.size/srate_down, 1/srate_down)}) # init dataarray with desired shapes
+        sigma_power.loc[computed_chan,:,:] = whole_tf # fill xarray at the chan with the whole night tf map of the chan
     
-    sigma_power.to_netcdf(f'../sigma/{subject}_morlet_sigma.nc') # save
+    sigma_power.to_netcdf(f'../sigma/{subject}_morlet_sigma_down.nc') # save
         
     
 

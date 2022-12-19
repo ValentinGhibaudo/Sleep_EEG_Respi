@@ -111,7 +111,7 @@ for subject in subjects:
     keep = mask_duration & mask_expi_amplitude
     resp_features_clean = resp_features[keep] # apply masking
     if save:
-        resp_features_clean.to_excel(f'../resp_features/{subject}_resp_features.xlsx')
+        resp_features_clean.reset_index(drop=True).to_excel(f'../resp_features/{subject}_resp_features.xlsx')
 
 
     N_before_cleaning = resp_features.shape[0]

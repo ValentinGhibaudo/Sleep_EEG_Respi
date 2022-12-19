@@ -65,6 +65,50 @@ for event_type in event_types:
 
     plt.savefig(f'../events_stats/{event_type}_boxplot.tif', format = 'tif', dpi = dpis, bbox_inches = 'tight')
     plt.close()
+    
+    
+# FIG 3 : Density of spindles by chan by stage
+def get_stage_duration(sleep_stats, subject, stage):
+    return sleep_stats.set_index('subject').loc[subject, stage]
+
+sleep_stats = pd.read_excel(f'../subject_characteristics/global_sleep_stats_{encoder_events}.xlsx', index_col = 0)
+rows = []
+evs = ['spindles','slowwaves']
+for ev in evs:
+    for sub in subjects:
+        events = pd.read_excel(f'../event_detection/{sub}_{ev}_reref_{encoder_events}.xlsx', index_col = 0)
+        n_ev_total = events.shape[0]
+        for stage in ['N2','N3']:
+            events_stage = events[events['Stage_Letter'] == stage]
+            n_ev_stage = events_stage.shape[0]
+            stage_duration = get_stage_duration(sleep_stats, sub, stage)
+            density_by_stage = n_ev_stage / stage_duration
+            for chan in events_stage['Channel'].unique():
+                events_stage_chan = events_stage[events_stage['Channel'] == chan]
+                n_ev_stage_chan = events_stage_chan.shape[0]
+                density_by_stage_by_chan = n_ev_stage_chan / stage_duration
+
+                row = [ev ,sub, stage, chan, n_ev_total, stage_duration, n_ev_stage, density_by_stage, n_ev_stage_chan, density_by_stage_by_chan]
+                rows.append(row)
+                    
+df_density = pd.DataFrame(rows, columns = ['event','subject','stage','chan','n_events_total','stage_duration',
+                                           'n_events_stage','density_by_stage','n_events_stage_chan','density_by_stage_by_chan'])
+
+df_density.to_excel('../events_stats/density.xlsx')
+
+order = ['Fp2','Fp1','C3','C4','Fz','Cz','Pz','T4','T3','O1','O2']
+
+fig, axs = plt.subplots(nrows =2, figsize = (15,10), constrained_layout = True)
+for r, ev in enumerate(evs):
+    df_plot = df_density[df_density['event'] == ev]
+    ax = axs[r]
+    sns.pointplot(data = df_plot , x = 'chan', y= 'density_by_stage_by_chan', hue = 'stage', ax=ax, order = order)
+    ax.set_title(ev)
+    ax.set_ylim(0,4)
+    ax.set_ylabel(f"Density of {ev} by minute / stage / chan")
+
+plt.savefig('../events_stats/density_events')
+plt.close()
 
 
     

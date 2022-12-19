@@ -3,7 +3,8 @@ import time
 
 # set list of script to run in the desired order
 # program_list = ['rsp_detection.py','rsp_tagging_by_sleep.py','rsp_stats.py','events_stats.py','events_coupling.py','events_coupling_stats.py','events_coupling_figs.py']
-program_list = ['events_coupling.py','events_coupling_stats.py','events_coupling_figs.py']
+# program_list = ['events_coupling.py','events_coupling_stats.py','events_coupling_figs.py']
+program_list = ['morlet_sigma_power.py','sigma_coupling.py']
 
 
 # RUN

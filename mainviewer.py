@@ -23,16 +23,13 @@ from ephyviewer import MainViewer, TraceViewer, TimeFreqViewer, EpochViewer, Eve
 from myqt import QT, DebugDecorator
 
 
+### PARAMS
+mono_chans = ['Fp1','Fp2','Fz','C4','C3','Cz']
+bipol_chans = ['Fp1-C3','Fp2-C4','C3-T3','C4-T4']
 
-#~ try:
-    #~ import av
-    #~ HAVE_AV = True
-#~ except:
-    #~ HAVE_AV = False
-
+###
 
 
-#~ main_index = get_main_index()
 
 
 def get_viewer_from_run_key(run_key, parent=None, with_video=False):
@@ -52,16 +49,6 @@ def get_viewer_from_run_key(run_key, parent=None, with_video=False):
     
     
     
-    
-    
-    
-    # trigs = detect_odor_trig_job.get(run_key)
-    
-    # artifacts = detect_artifact_period_job.get(run_key)
-    
-    # datatime
-    #~ datetime0 = annotations.get('rec_datetime', None)
-    #~ show_label_datetime = (datetime0 is not None)
     datetime0 = None
     show_label_datetime = False
 
@@ -78,7 +65,7 @@ def get_viewer_from_run_key(run_key, parent=None, with_video=False):
     win = MainViewer(show_label_datetime=show_label_datetime, parent=parent, show_global_xsize=True,
             show_auto_scale=True, datetime0=datetime0, settings_name=settings_name, debug=False)
 
-    #~ xsize = 60.
+
 
     t_start = 0
 
@@ -89,49 +76,47 @@ def get_viewer_from_run_key(run_key, parent=None, with_video=False):
                 scatter_indexes=scatter_indexes_resp, scatter_channels=scatter_channels_resp, scatter_colors=scatter_colors_resp)
     win.add_view(view1)
     view1.params['scale_mode'] = 'real_scale'
-    #~ view1.params['xsize'] = xsize
     view1.params['display_labels'] = False
     view1.params['display_offset'] = False
     view1.params['antialias'] = True
-    #~ view1.params['background_color'] = '#ffffff'
     view1.by_channel_params[ 'ch0' ,'color'] = '#ffc83c'
     
     
     
     ###### viewer2 
-    channel_names = prepros_reref.coords['chan'].values
+    channel_names = mono_chans
     
     scatter_indexes = {}
     scatter_channels = {}
     scatter_colors = {}
     i = 0
-    for chan_name in np.unique(slowwaves['Channel']):
+    for chan_name in mono_chans:
         mask = slowwaves['Channel'] == chan_name
         df = slowwaves[mask]
         chan = list(channel_names).index(chan_name)
         scatter_indexes[i] = (df['NegPeak'] * srate).astype('int64')
         scatter_channels[i] = [chan]
-        scatter_colors[i] = 'red'
+        scatter_colors[i] = 'yellow'
         i += 1
 
-    for chan_name in np.unique(spindles['Channel']):
+    for chan_name in mono_chans:
         mask = spindles['Channel'] == chan_name
         df = spindles[mask]
         chan = list(channel_names).index(chan_name)
         scatter_indexes[i] = (df['Peak'] * srate).astype('int64')
         scatter_channels[i] = [chan]
-        scatter_colors[i] = 'green'
+        scatter_colors[i] = 'violet'
         i += 1
     
-    sigs = prepros_reref.values.T
+    sigs = prepros_reref.sel(chan=mono_chans).values.T
     view2 = TraceViewer.from_numpy(sigs,  srate, t_start, 'reref', channel_names=channel_names, 
                 scatter_indexes=scatter_indexes, scatter_channels=scatter_channels, scatter_colors=scatter_colors)
     win.add_view(view2)
     view2.params['display_labels'] = True
     view2.params['scale_mode'] = 'same_for_all'
-    view2.by_channel_params[ 'ch15' ,'visible'] = False
-    for c, chan_name in enumerate(channel_names):
-        view2.by_channel_params[ f'ch{c}' ,'visible'] = c < 11
+    # view2.by_channel_params[ 'ch15' ,'visible'] = False
+    # for c, chan_name in enumerate(eeg_mono_chans):
+    #     view2.by_channel_params[ f'ch{c}' ,'visible'] = c < 11
     
     
     #### viewer 5 
@@ -151,18 +136,17 @@ def get_viewer_from_run_key(run_key, parent=None, with_video=False):
 
 
     #### viewer 3
-    channel_names = prepros_bipol.coords['chan'].values
-    sigs = prepros_bipol.values.T
+    channel_names = bipol_chans
+    sigs = prepros_bipol.sel(chan = bipol_chans).values.T
     view3 = TraceViewer.from_numpy(sigs,  srate, t_start, 'bipol', channel_names=channel_names)
     win.add_view(view3)
     view3.params['display_labels'] = True
     view3.params['scale_mode'] = 'same_for_all'
-    for c, chan_name in enumerate(channel_names):
-        view3.by_channel_params[ f'ch{c}' ,'visible'] = c < 9
+    # for c, chan_name in enumerate(channel_names):
+    #     view3.by_channel_params[ f'ch{c}' ,'visible'] = c < 9
 
     
     
-    #~ for i in range(all_sigs.shape):
         
     #### viewer 4 
     periods = []
@@ -180,7 +164,7 @@ def get_viewer_from_run_key(run_key, parent=None, with_video=False):
     win.add_view(view4)
 
     
-    #####
+    ##### viewer 6 
     events = []
     events.append({
         'time' : slowwaves['NegPeak'].values,
@@ -193,14 +177,14 @@ def get_viewer_from_run_key(run_key, parent=None, with_video=False):
         'time' : spindles['Peak'].values,
         'duration' : np.zeros(spindles.shape[0]),
         'label': slowwaves['Channel'].astype(str),
-        'name': 'spindles',
+        'name': 'Spindles',
         }
     )
 
     
     
     view6 = EventList.from_numpy(events, 'slowwaves')
-    win.add_view(view6, location='right',  orientation='horizontal')
+    win.add_view(view6, location='right',  orientation='vertical')
 
 
     win.set_xsize(60.)
@@ -209,10 +193,7 @@ def get_viewer_from_run_key(run_key, parent=None, with_video=False):
     
         
     
-    #~ sig_duration = sig_resp.shape[0] / sr
-    #~ win.navigation_toolbar.set_start_stop(t_start, t_start+sig_duration)
-    
-    
+
 
     return win
 
