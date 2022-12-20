@@ -1,6 +1,7 @@
 import pandas as pd
 import seaborn as sns
-from params import subjects, dpis, interesting_variables, encoder_events
+import numpy as np
+from params import subjects, dpis, interesting_variables, encoder_events, stages_events_select
 import matplotlib.pyplot as plt
 
 
@@ -111,7 +112,38 @@ plt.savefig('../events_stats/density_events')
 plt.close()
 
 
+
+
+
+# DISTRIBUTIONS
+resp_features_to_include = ['cycle_duration','inspi_duration','expi_duration','cycle_freq','cycle_ratio','inspi_amplitude','expi_amplitude','inspi_volume','expi_volume']
+ev_features_to_include = {'sp':['Duration', 'Amplitude', 'RMS', 'AbsPower','RelPower', 'Frequency', 'Oscillations', 'Symmetry'],
+'sw':['Duration','ValNegPeak', 'ValPosPeak', 'PTP', 'Slope', 'Frequency','PhaseAtSigmaPeak', 'ndPAC']}
+
+for event_type in event_types:
+    df_events = events_df[event_type]
+    df_events_staged = df_events[df_events['Stage_Letter'].isin(stages_events_select)]
     
+    for subject in subjects:
+        df_events_staged_subject = df_events_staged[df_events_staged['subject'] == subject]
+
+        nrows = 2
+        ncols = 4
+        ev_features_to_include_array = np.array(ev_features_to_include[event_type]).reshape(nrows,ncols)
+        fig, axs = plt.subplots(nrows, ncols, figsize = (20,10), constrained_layout = True)
+        fig.suptitle(subject, fontsize = 20, y = 1.05)
+        for r in range(nrows):
+            for c in range(ncols):
+                ax = axs[r,c]
+                metric = ev_features_to_include_array[r,c]
+                ax.hist(df_events_staged_subject[metric], bins = 100)
+                ax.set_title(metric)
+        plt.savefig(f'../events_stats/{subject}_{event_type}_distributions', bbox_inches = 'tight')
+        plt.close()
+
+
+
+
 
 
     

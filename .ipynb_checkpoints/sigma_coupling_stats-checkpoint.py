@@ -16,7 +16,7 @@ def get_circ_features(angles, weights): # angles in radians and weights for each
 
     return mu, r
 
-rows=[]
+rows = []
 
 for subject in subjects:
     phase_freqs = xr.open_dataarray(f'../sigma_coupling/{subject}_phase_freq_sigma.nc').dropna('cycle')
