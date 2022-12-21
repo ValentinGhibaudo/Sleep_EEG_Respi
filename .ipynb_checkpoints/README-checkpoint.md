@@ -19,6 +19,7 @@ Pipeline: 13 Scripts
 - rsp_detection.py # Detect respiratory cycles and compute features for each cycle (running time ~5 mins)
 - rsp_tagging_by_sleep.py # Tag resp cycles with corresponding sleep stage, and notion of spindle or slow wave present inside (running time ~ 3 mins)
 - rsp_stats.ipynb # Compute statistics about respiratory cycles features : presence of events inside... sleep staging effect. (running time ~ 1 min)
+- events_to_resp_features.py # Compute correlations between respiration features and both event types features for each subject
 
 # Events coupling to respiration
 - events_coupling.py # Compute phase angles of NegPeak of slow waves and Peak of spindles along respiration phase (running time ~ 1 min)

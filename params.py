@@ -1,6 +1,6 @@
 # RUN KEYS
 subjects = ['S1','S2','S3','S4','S5','S6','S7','S8','S9','S10','S11','S12','S13','S14','S15','S16','S17','S18','S19','S20']
-# subjects = ['S1']
+# subjects = ['S2','S3','S4']
 
 
 # USEFUL LISTS AND VARIABLES
@@ -39,7 +39,8 @@ sp_min_distance = 500 # If two spindles are closer than min_distance (in ms), th
 # 'rel_pow': Relative power (= power ratio freq_sp / freq_broad).
 # 'corr': Moving correlation between original signal and sigma-filtered signal.
 # 'rms': Number of standard deviations above the mean of a moving root mean square of sigma-filtered signal.
-sp_thresh = {'corr': 0.69, 'rel_pow': 0.3, 'rms': 1.6} # default = 0.65 , 0.2 , 1.5 
+sp_thresh = {'corr': None, 'rel_pow': None, 'rms': 1.5} # default = 0.65 , 0.2 , 1.5 
+
 
 """A sleep spindle detection algorithm that emulates human expert spindle scoring, Karine Lacours et al., 2019
 - rel_pow = relative sigma power to ensure the increase of power is specific to the sigma band
@@ -52,7 +53,7 @@ result in the change in broadband
 freq_sw = (0.3, 1.5) # Slow wave frequency range, in Hz
 sw_dur_neg = (0.3, 1.5) # The minimum and maximum duration of the negative deflection of the slow wave, in secs
 sw_dur_pos = (0.1, 1) # The minimum and maximum duration of the positive deflection of the slow wave, in secs
-sw_amp_neg = (70,250) # Absolute minimum and maximum negative trough amplitude of the slow-wave. In µV
+sw_amp_neg = (40,250) # Absolute minimum and maximum negative trough amplitude of the slow-wave. In µV
 sw_amp_pos = (10,150) # Absolute minimum and maximum positive peak amplitude of the slow-wave. In µV
 sw_amp_ptp = (75,350) # Minimum and maximum peak-to-peak amplitude of the slow-wave. In µV
 
@@ -75,7 +76,7 @@ amplitude_exponent = 2 # raise factor to amplify values
 
 ### EVENT COUPLING ###
 # ENCODER OF HYPNOGRAM THAT LABELIZED STAGING OF EVENTS (HUMAN or YASA)
-encoder_events = 'human'
+encoder_events = 'yasa'
 # EVENTS TIMESTAMPS LABELS TO SUMMARIZE AN EVENT (SPINDLE or SLOWWAVE) TO ON TIMING
 timestamps_labels = {'sp':'Peak','sw':'NegPeak'} # labels = colnames of the yasa detection output
 # CHANNELS EVENTS TO KEEP
