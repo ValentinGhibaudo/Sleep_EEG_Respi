@@ -48,6 +48,10 @@ sp_thresh = {'corr': None, 'rel_pow': None, 'rms': 1.5} # default = 0.65 , 0.2 ,
 result in the change in broadband
 """
 
+# SLOW VS FAST SPINDLES SUBJECTS & THRESHOLDS
+spindles_freq_threshold = {'S1':13.7,'S2':12.9,'S3':13.3,'S4':12.7,'S5':13.6,'S6':12.8,'S7':12.8,'S8':12.2,'S9':12.7,'S10':13.1,
+                           'S11':13.4,'S12':13.1,'S13':13,'S14':13,'S15':13.4,'S16':13.3,'S17':13,'S18':12.9,'S19':12.8,'S20':13.1}
+
 
 # SLOW WAVES DETECTION PARAMS
 freq_sw = (0.3, 1.5) # Slow wave frequency range, in Hz
@@ -81,7 +85,7 @@ encoder_events = 'yasa'
 timestamps_labels = {'sp':'Peak','sw':'NegPeak'} # labels = colnames of the yasa detection output
 # CHANNELS EVENTS TO KEEP
 # channels_events_select =  ['Fp2','Fp1','Fz','C4','C3','Cz','T4','T3','Pz','O1','O2'] # only events detected in these channels are kept
-channels_events_select =  ['Cz'] # only events detected in these channels are kept
+channels_events_select =  ['Fz'] # only events detected in these channels are kept
 # STAGE EVENTS TO KEEP
 stages_events_select =  ['N2','N3'] # only events detected during these sleep stages are kept
 
@@ -102,5 +106,5 @@ stages_sigma_select =  ['N2','N3'] # only sigma extracted during these sleep sta
 ### FIGURES
 dpis = 100 # dots per inch = resolution of figs
 sigma_coupling_chan = 'Cz' # global sigma coupling fig with just one matrix by patient will average phase-freq from these chans
-fig_global_cycle_type = 'diff' # global sigma coupling fig with just one matrix by patient will select this type of tagging of resp cycles
+fig_global_cycle_type = 'N2' # global sigma coupling fig with just one matrix by patient will select this type of tagging of resp cycles
 

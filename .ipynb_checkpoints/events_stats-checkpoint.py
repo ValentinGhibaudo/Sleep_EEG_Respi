@@ -1,7 +1,7 @@
 import pandas as pd
 import seaborn as sns
 import numpy as np
-from params import subjects, dpis, interesting_variables, encoder_events, stages_events_select
+from params import subjects, dpis, interesting_variables, encoder_events, stages_events_select, spindles_freq_threshold
 import matplotlib.pyplot as plt
 
 
@@ -105,7 +105,7 @@ for r, ev in enumerate(evs):
     ax = axs[r]
     sns.pointplot(data = df_plot , x = 'chan', y= 'density_by_stage_by_chan', hue = 'stage', ax=ax, order = order)
     ax.set_title(ev)
-    ax.set_ylim(0,4)
+    # ax.set_ylim(0,4)
     ax.set_ylabel(f"Density of {ev} by minute / stage / chan")
 
 plt.savefig('../events_stats/density_events')
@@ -126,20 +126,37 @@ for event_type in event_types:
     
     for subject in subjects:
         df_events_staged_subject = df_events_staged[df_events_staged['subject'] == subject]
+        N = df_events_staged_subject.shape[0]
 
         nrows = 2
         ncols = 4
         ev_features_to_include_array = np.array(ev_features_to_include[event_type]).reshape(nrows,ncols)
         fig, axs = plt.subplots(nrows, ncols, figsize = (20,10), constrained_layout = True)
-        fig.suptitle(subject, fontsize = 20, y = 1.05)
+        fig.suptitle(f'{subject} - N : {int(N)} {event_types_titles[event_type]}', fontsize = 20, y = 1.05)
         for r in range(nrows):
             for c in range(ncols):
                 ax = axs[r,c]
                 metric = ev_features_to_include_array[r,c]
                 ax.hist(df_events_staged_subject[metric], bins = 100)
                 ax.set_title(metric)
+                if metric == 'Frequency' and event_type == 'sp':
+                    ax.axvline(x = spindles_freq_threshold[subject], color = 'r')
         plt.savefig(f'../events_stats/{subject}_{event_type}_distributions', bbox_inches = 'tight')
         plt.close()
+        
+        for predictor in ['Stage_Letter','Channel']:
+            fig, axs = plt.subplots(nrows, ncols, figsize = (20,10), constrained_layout = True)
+            fig.suptitle(f'{subject} - N : {int(N)} {event_types_titles[event_type]}', fontsize = 20, y = 1.05)
+            for r in range(nrows):
+                for c in range(ncols):
+                    ax = axs[r,c]
+                    metric = ev_features_to_include_array[r,c]
+                    sns.kdeplot(data = df_events_staged_subject, x = metric , hue = predictor, ax=ax)
+                    if metric == 'Frequency' and event_type == 'sp':
+                        ax.axvline(x = spindles_freq_threshold[subject], color = 'r')
+                    ax.set_title(metric)
+            plt.savefig(f'../events_stats/{subject}_{event_type}_kde_{predictor}', bbox_inches = 'tight')
+            plt.close()
 
 
 
