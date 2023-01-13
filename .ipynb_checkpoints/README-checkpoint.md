@@ -5,7 +5,7 @@ V. Ghibaudo, M. Juventin, L. Peter-Derex, N. Buonviso
 This repository contains python files and notebooks used for the whole analysis.
 
 
-Pipeline: 13 Scripts
+Pipeline: 
 - params.py # Key parameters are defined before computation
 
 # Preproc : 
@@ -13,6 +13,7 @@ Pipeline: 13 Scripts
 
 # Event detection :
 - detect_sleep_events.py # Spindle & Slow-waves detection with YASA toolbox from eeg data (running time ~ 40 mins)
+- events_cooccuring.py # Spindle and Slow-Waves are labelized according to occurence of spindle in slowwaves or not
 - events_stats.py # Descriptive statistics on detected events (running time ~ 30 secs)
 
 # Respi : 
@@ -20,6 +21,7 @@ Pipeline: 13 Scripts
 - rsp_tagging_by_sleep.py # Tag resp cycles with corresponding sleep stage, and notion of spindle or slow wave present inside (running time ~ 3 mins)
 - rsp_stats.ipynb # Compute statistics about respiratory cycles features : presence of events inside... sleep staging effect. (running time ~ 1 min)
 - events_to_resp_features.py # Compute correlations between respiration features and both event types features for each subject
+- cross_correlogram.py # Compute cross-correlograms of spindles times vs slow waves times and respi times
 
 # Events coupling to respiration
 - events_coupling.py # Compute phase angles of NegPeak of slow waves and Peak of spindles along respiration phase (running time ~ 1 min)

@@ -48,6 +48,7 @@ staged_stats.to_excel(destination_folder + 'rsp_stage_events_stats.xlsx')
 
 
 # FIG 1 : BARPLOT OF NUMBER OF RESPIRATION CYCLES TOTAL, SPINDLED, SLOWWAVED , ALL SUBJECTS POOLED
+print('FIG 1')
 fig, ax = plt.subplots()
 global_stats[['n cycles','n spindled','n slowwaved']].sum().plot.bar(ax=ax)
 ax.set_title('Pooled resp cycles from all subjects')
@@ -56,6 +57,7 @@ plt.close()
 
 
 # FIG 2 : BOXPLOTS OF PROPORTION OF RESPI CYCLES WITH AT LEAST ONE EVENT INSIDE BY STAGE
+print('FIG 2')
 fig, axs = plt.subplots(ncols = 2, figsize =(15,5))
 fig.suptitle('Proportion of events in respiratory cycles by stage')
 ax = axs[0]
@@ -66,7 +68,8 @@ plt.savefig(destination_folder + 'boxplot_proportion_event_by_stage', bbox_inche
 plt.close()
 
 
-# FIG 3 : BOXPLOTS OF PROPORTION OF RESPI CYCLES WITH AT LEAST ONE EVENT INSIDE BY STAGE
+# FIG 3 : VIOLINPLOTS SEARCHING A POSSIBLE DIFFERENCE OF THE FEATURES OF THE RESP CYCLES WITH AT LEAST ONE EVENT FOUND INSIDE
+print('FIG 3')
 fig, axs = plt.subplots(nrows = 2, ncols = 3, figsize = (15,8), constrained_layout = True)
 fig.suptitle('Effect of event presence in resp cycles on their features')
 for r, predictor in enumerate(['Spindle_Tag', 'SlowWave_Tag']):
@@ -77,18 +80,33 @@ plt.savefig(destination_folder + 'violin_eventing_effect', bbox_inches= 'tight')
 plt.close()
 
 
-# FIG 4 : VIOLINPLOTS SEARCHING A POSSIBLE DIFFERENCE OF THE FEATURES OF THE RESP CYCLES WITH AT LEAST ONE EVENT FOUND INSIDE
-outcomes = np.array(['cycle_freq','cycle_ratio','inspi_volume','expi_volume']).reshape(2,2)
-fig, axs = plt.subplots(nrows = 2, ncols = 2, constrained_layout = True, figsize = (15,8))
+# FIG 4 :  VIOLINPLOTS THE FEATURES OF THE RESP CYCLES ACCORDING TO SLEEP STAGE
+print('FIG 4')
+nrows = 4
+ncols = 2
+outcomes = np.array(['cycle_duration','inspi_duration','expi_duration','cycle_ratio','cycle_volume','inspi_volume','expi_volume','second_volume']).reshape(nrows,ncols)
+fig, axs = plt.subplots(nrows = nrows, ncols = ncols, constrained_layout = True, figsize = (15,8))
 fig.suptitle('Effect of sleep staging on respiratory features')
-for r in range(2):
-    for c in range(2):
+for r in range(nrows):
+    for c in range(ncols):
         ax = axs[r,c]
         outcome = outcomes[r,c]
-        sns.violinplot(data = pooled_features, x = 'sleep_stage', y = outcome ,ax=ax)
+        sns.violinplot(data = pooled_features, y = outcome,  x = 'sleep_stage' ,ax=ax)
 plt.savefig(destination_folder + 'plot_sleep_stage_effect', bbox_inches= 'tight')
 plt.close()
 
+for subject in subjects:
+    print(subject)
+    features_subject = pooled_features[pooled_features['subject'] == subject]
+    fig, axs = plt.subplots(nrows = nrows, ncols = ncols, constrained_layout = True, figsize = (15,8))
+    fig.suptitle(f'Effect of sleep staging on respiratory features in {subject}')
+    for r in range(nrows):
+        for c in range(ncols):
+            ax = axs[r,c]
+            outcome = outcomes[r,c]
+            sns.violinplot(data = features_subject, y = outcome,  x = 'sleep_stage' ,ax=ax)
+    plt.savefig(destination_folder + f'{subject}_plot_sleep_stage_effect', bbox_inches= 'tight')
+    plt.close()
 
 
 # COMPUTE MEAN RESP CYCLES RATIO BY SUBJECT BY STAGE (AND APPEND A MEAN VERSION ACROSS SUBJECTS)

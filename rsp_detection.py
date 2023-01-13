@@ -2,6 +2,7 @@ import numpy as np
 import xarray as xr
 import matplotlib.pyplot as plt
 import pandas as pd
+from scipy import signal
 from params import srate, respi_chan, filter_resp, resp_shifting, clean_resp_features, subjects
 from mne.filter import filter_data
 
@@ -9,38 +10,44 @@ from mne.filter import filter_data
 This script allows detection of respiratory cycles and compute features for each cycle, for all subjects
 """
 
-def mne_filter(sig, srate, lowcut, highcut):
-    filtered_sig = filter_data(sig, srate, lowcut, highcut, verbose = False)
+def iirfilt(sig, srate, lowcut=None, highcut=None, order = 4, ftype = 'butter', verbose = False, show = False): # IIR-FILTER
 
-#     btype = 'bandpass'
-    
-#     if btype in ('bandpass', 'bandstop'):
-#         band = [lowcut, highcut]
-#         assert len(band) == 2
-#         Wn = [e / srate * 2 for e in band]
-#     else:
-        
-#         Wn = float(lowcut) / srate * 2
-    
-#     filter_mode = 'ba'
-#     filter_mode = 'sos'
-    
-#     ftype = 'butter'
-#     ftype = 'bessel'
-    
-#     N = 1
-    
-    
-#     b, a = scipy.signal.iirfilter(N, Wn, analog=False, btype=btype, ftype=ftype, output=filter_mode)
-#     filtered_traces = scipy.signal.filtfilt(b, a, traces_chunk, axis=0)
-    
-#     sos = scipy.signal.iirfilter(N, Wn, analog=False, btype=btype, ftype=ftype, output=filter_mode)
-#     filtered_traces = scipy.signal.sosfiltfilt(sos, traces_chunk, axis=0)
-    
-    
-    
-    
-    
+    if lowcut is None and not highcut is None:
+        btype = 'lowpass'
+        cut = highcut
+
+    if not lowcut is None and highcut is None:
+        btype = 'highpass'
+        cut = lowcut
+
+    if not lowcut is None and not highcut is None:
+        btype = 'bandpass'
+
+    if btype in ('bandpass', 'bandstop'):
+        band = [lowcut, highcut]
+        assert len(band) == 2
+        Wn = [e / srate * 2 for e in band]
+    else:
+        Wn = float(cut) / srate * 2
+
+    filter_mode = 'sos'
+    sos = signal.iirfilter(order, Wn, analog=False, btype=btype, ftype=ftype, output=filter_mode)
+    filtered_sig = signal.sosfiltfilt(sos, sig, axis=0)
+
+    if verbose:
+        print(f'{ftype} iirfilter of {order}th-order')
+        print(f'btype : {btype}')
+
+
+    if show:
+        w, h = signal.sosfreqz(sos,fs=srate)
+        fig, ax = plt.subplots()
+        ax.plot(w, np.abs(h))
+        ax.set_title('Frequency response')
+        ax.set_xlabel('Frequency [Hz]')
+        ax.set_ylabel('Amplitude')
+        plt.show()
+
     return filtered_sig
 
 def detect_zerox(sig):
@@ -69,18 +76,21 @@ def get_cycle_features(zerox, sig, srate):
             cycle_ratio = inspi_duration / cycle_duration
             inspi_amplitude = np.max(np.abs(sig[start:transition]))
             expi_amplitude = np.max(np.abs(sig[transition:stop]))
+            cycle_amplitude = inspi_amplitude + expi_amplitude
             inspi_volume = np.trapz(np.abs(sig[start:transition]))
             expi_volume = np.trapz(np.abs(sig[transition:stop]))
+            cycle_volume = inspi_volume + expi_volume
+            second_volume = cycle_freq * cycle_volume
             features.append([start, transition , stop, start_t, transition_t, stop_t, cycle_duration,
                              inspi_duration, expi_duration, cycle_freq, cycle_ratio, inspi_amplitude,
-                             expi_amplitude, inspi_volume, expi_volume])
+                             expi_amplitude,cycle_amplitude, inspi_volume, expi_volume, cycle_volume, second_volume])
     df_features = pd.DataFrame(features, columns = ['start','transition','stop','start_time','transition_time',
                                                     'stop_time','cycle_duration','inspi_duration','expi_duration','cycle_freq','cycle_ratio',
-                                                    'inspi_amplitude','expi_amplitude','inspi_volume','expi_volume'])
+                                                    'inspi_amplitude','expi_amplitude','cycle_amplitude','inspi_volume','expi_volume','cycle_volume','second_volume'])
     return df_features
 
-def zscore(sig):
-    return (sig - np.mean(sig)) / np.std(sig)
+def robust_zscore(sig): # center by median and reduce by std
+    return (sig - np.median(sig)) / np.std(sig)
 
 def get_resp_features(rsp, srate):
     zerox = detect_zerox(rsp)
@@ -102,13 +112,14 @@ for subject in subjects:
     print(subject)
 
     resp_signal = xr.open_dataarray(f'../preproc/{subject}_reref.nc').sel(chan = respi_chan).data
-    resp_zscored = zscore(resp_signal) # signal is centered and reduced to set on the same scale for the subjects
-    resp_filtered = mne_filter(resp_zscored, srate, filter_resp['lowcut'], filter_resp['highcut']) # filtering signal
+    resp_zscored = robust_zscore(resp_signal) # signal is centered and reduced to set on the same scale for the subjects
+    resp_filtered = iirfilt(sig=resp_zscored, srate=srate, lowcut=filter_resp['lowcut'], highcut=filter_resp['highcut'], order=filter_resp['order'], ftype = filter_resp['ftype']) # filtering signal
     resp_shifted = resp_filtered + resp_shifting # Shift respi baseline a little bit to detect zero-crossings above baseline noise
     resp_features = get_resp_features(resp_shifted, srate) # compute resp features 
     mask_duration = (resp_features['cycle_duration'] > clean_resp_features['cycle_duration']['min']) & (resp_features['cycle_duration'] < clean_resp_features['cycle_duration']['max']) # keep cycles according to their duration
-    mask_expi_amplitude = (resp_features['expi_amplitude'] > clean_resp_features['expi_amplitude'][subject]) # keep cycles according to their expi amplitude
-    keep = mask_duration & mask_expi_amplitude
+    mask_cycle_ratio = resp_features['cycle_ratio'] < clean_resp_features['cycle_ratio'] # inspi / expi duration time ratio has to be lower than set value
+    mask_second_volume = resp_features['second_volume'] > clean_resp_features['second_volume'] # zscored air volume mobilized by second by resp cycle has to be higher than set value
+    keep = mask_duration & mask_cycle_ratio & mask_second_volume
     resp_features_clean = resp_features[keep] # apply masking
     if save:
         resp_features_clean.reset_index(drop=True).to_excel(f'../resp_features/{subject}_resp_features.xlsx')
@@ -120,7 +131,7 @@ for subject in subjects:
     print('N cycles removed :', N_removed_by_cleaning)
 
     ### PLOT DISTRIBUTIONS OF RESPIRATION METRICS BEFORE CLEANING
-    metrics = np.array(['cycle_duration','inspi_duration','expi_duration','cycle_freq','cycle_ratio','inspi_amplitude','expi_amplitude','inspi_volume','expi_volume']).reshape(3,3)
+    metrics = np.array(['cycle_duration','inspi_duration','expi_duration','cycle_freq','cycle_ratio','inspi_amplitude','expi_amplitude','cycle_amplitude','inspi_volume','expi_volume','cycle_volume','second_volume']).reshape(4,3)
     nrows = metrics.shape[0]
     ncols = metrics.shape[1]
 
@@ -142,8 +153,8 @@ for subject in subjects:
                 else:
                     color = 'g'
                 ax.axvline(x = dispersion[estimator], linestyle = '--', linewidth = 0.4, color = color, label = estimator)
-            if metric == 'expi_amplitude':
-                ax.axvline(x = clean_resp_features['expi_amplitude'][subject], color = 'r', label = 'remove threshold')
+            if metric == 'second_volume':
+                ax.axvline(x = clean_resp_features['second_volume'], color = 'r', label = 'remove threshold')
             ax.legend()
     if save:
         plt.savefig(f'../view_respi_detection/{subject}_resp_detection_distribution', bbox_inches = 'tight')

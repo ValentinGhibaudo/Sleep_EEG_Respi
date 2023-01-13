@@ -1,6 +1,6 @@
 # RUN KEYS
-subjects = ['S1','S2','S3','S4','S5','S6','S7','S8','S9','S10','S11','S12','S13','S14','S15','S16','S17','S18','S19','S20']
-# subjects = ['S2','S3','S4']
+# subjects = ['S1','S2','S3','S4','S5','S6','S7','S8','S9','S10','S11','S12','S13','S14','S15','S16','S17','S18','S19','S20']
+subjects = ['S1']
 
 
 # USEFUL LISTS AND VARIABLES
@@ -20,15 +20,14 @@ mapper_yasa_encoding = {'W':0,'N1':1,'N2':2,'N3':3,'R':4} # encoding of str stag
 
 # RESPI DETECTION PARAMS
 respi_chan = 'DEBIT' # Define which respi channel is used for respiration cycle detection
+filter_resp = {'lowcut':None, 'highcut':1.5, 'order':4, 'ftype':'butter'} # Define how to filter respiration signal before zero crossing detection
+resp_shifting = -0.02 # Shift respi baseline a little bit to detect zero-crossings above baseline noise
+# Define absolute criteria of filtering of respiration cycles
 clean_resp_features = {
     'cycle_duration':{'min':1,'max':15}, # secs
-    'expi_amplitude':{
-        'S1':0.2,'S2':0.2,'S3':0.5,'S4':0.4,'S5':0.3,'S6':0.1,'S7':0.3,'S8':0.5,'S9':0.3,'S10':0.5,
-        'S11':0.25,'S12':0.15,'S13':0.2,'S14':0.2,'S15':0.25,'S16':0.3,'S17':0.3,'S18':0.1,'S19':0.2,'S20':0.5
-        }
-} # Define absolute criteria of filtering of respiration cycles
-filter_resp = {'lowcut':None, 'highcut':2} # Define how to filter respiration signal before zero crossing detection
-resp_shifting = -0.05 # Shift respi baseline a little bit to detect zero-crossings above baseline noise
+    'cycle_ratio':0.6, # inspi / expi duration time ratio has to be lower than this value
+    'second_volume':20 # zscored air volume mobilized by second by resp cycle has to be higher than this value
+} 
 
 
 # SPINDLES DETECTION PARAMS

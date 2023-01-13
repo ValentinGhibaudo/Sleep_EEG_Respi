@@ -24,7 +24,7 @@ from myqt import QT, DebugDecorator
 
 
 ### PARAMS
-mono_chans = ['Fp1','Fp2','Fz','C4','C3','Cz']
+mono_chans = ['Fp1','Fp2','Fz','C4','C3','Cz','Pz']
 bipol_chans = ['Fp1-C3','Fp2-C4','C3-T3','C4-T4']
 
 ###
@@ -79,7 +79,7 @@ def get_viewer_from_run_key(run_key, parent=None, with_video=False):
     view1.params['display_labels'] = False
     view1.params['display_offset'] = False
     view1.params['antialias'] = True
-    view1.by_channel_params[ 'ch0' ,'color'] = '#ffc83c'
+    view1.by_channel_params[ 'ch0' ,'color'] = 'ffc83c'
     
     
     
@@ -96,7 +96,7 @@ def get_viewer_from_run_key(run_key, parent=None, with_video=False):
         chan = list(channel_names).index(chan_name)
         scatter_indexes[i] = (df['NegPeak'] * srate).astype('int64')
         scatter_channels[i] = [chan]
-        scatter_colors[i] = 'yellow'
+        scatter_colors[i] = 'f3ff33'
         i += 1
 
     for chan_name in mono_chans:
@@ -105,10 +105,11 @@ def get_viewer_from_run_key(run_key, parent=None, with_video=False):
         chan = list(channel_names).index(chan_name)
         scatter_indexes[i] = (df['Peak'] * srate).astype('int64')
         scatter_channels[i] = [chan]
-        scatter_colors[i] = 'violet'
+        scatter_colors[i] = 'ff33ca'
         i += 1
     
     sigs = prepros_reref.sel(chan=mono_chans).values.T
+    print(sigs.dtype)
     view2 = TraceViewer.from_numpy(sigs,  srate, t_start, 'reref', channel_names=channel_names, 
                 scatter_indexes=scatter_indexes, scatter_channels=scatter_channels, scatter_colors=scatter_colors)
     win.add_view(view2)
@@ -136,14 +137,14 @@ def get_viewer_from_run_key(run_key, parent=None, with_video=False):
 
 
     #### viewer 3
-    channel_names = bipol_chans
-    sigs = prepros_bipol.sel(chan = bipol_chans).values.T
-    view3 = TraceViewer.from_numpy(sigs,  srate, t_start, 'bipol', channel_names=channel_names)
-    win.add_view(view3)
-    view3.params['display_labels'] = True
-    view3.params['scale_mode'] = 'same_for_all'
-    # for c, chan_name in enumerate(channel_names):
-    #     view3.by_channel_params[ f'ch{c}' ,'visible'] = c < 9
+    # channel_names = bipol_chans
+    # sigs = prepros_bipol.sel(chan = bipol_chans).values.T
+    # view3 = TraceViewer.from_numpy(sigs,  srate, t_start, 'bipol', channel_names=channel_names)
+    # win.add_view(view3)
+    # view3.params['display_labels'] = True
+    # view3.params['scale_mode'] = 'same_for_all'
+    # # for c, chan_name in enumerate(channel_names):
+    # #     view3.by_channel_params[ f'ch{c}' ,'visible'] = c < 9
 
     
     
@@ -165,26 +166,26 @@ def get_viewer_from_run_key(run_key, parent=None, with_video=False):
 
     
     ##### viewer 6 
-    events = []
-    events.append({
-        'time' : slowwaves['NegPeak'].values,
-        'duration' : np.zeros(slowwaves.shape[0]),
-        'label': slowwaves['Channel'].astype(str),
-        'name': 'Slow Waves ',
-        }
-    )
-    events.append({
-        'time' : spindles['Peak'].values,
-        'duration' : np.zeros(spindles.shape[0]),
-        'label': slowwaves['Channel'].astype(str),
-        'name': 'Spindles',
-        }
-    )
+    # events = []
+    # events.append({
+    #     'time' : slowwaves['NegPeak'].values,
+    #     'duration' : np.zeros(slowwaves.shape[0]),
+    #     'label': slowwaves['Channel'].astype(str),
+    #     'name': 'Slow Waves ',
+    #     }
+    # )
+    # events.append({
+    #     'time' : spindles['Peak'].values,
+    #     'duration' : np.zeros(spindles.shape[0]),
+    #     'label': slowwaves['Channel'].astype(str),
+    #     'name': 'Spindles',
+    #     }
+    # )
 
     
     
-    view6 = EventList.from_numpy(events, 'slowwaves')
-    win.add_view(view6, location='right',  orientation='vertical')
+    # view6 = EventList.from_numpy(events, 'slowwaves')
+    # win.add_view(view6, location='right',  orientation='vertical')
 
 
     win.set_xsize(60.)

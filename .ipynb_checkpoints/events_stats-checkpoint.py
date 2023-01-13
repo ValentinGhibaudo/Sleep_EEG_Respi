@@ -160,8 +160,56 @@ for event_type in event_types:
 
 
 
+            
+# CROSS-CORRELOGRAM SPINDLES VS SLOWWAVES
+def crosscorrelogram(a,b):
+    """
+    Compute combinatorial difference between a vs b (a - b with all possibilities)
+    
+    ------------------
+    INPUTS :
+    a : 1D numpy vector
+    b : 1D numpy vector
+    
+    OUTPUT :
+    c : crosscorrelogram vector of shape (a.size*b.size,)
+    
+    """
+    c = a[:, np.newaxis] - b[np.newaxis, :]
+    return c.reshape(-1)
 
+for subject in subjects:
+    spindles = pd.read_excel(f'../event_detection/{subject}_spindles_reref_yasa.xlsx', index_col = 0)
+    slowwaves = pd.read_excel(f'../event_detection/{subject}_slowwaves_reref_yasa.xlsx', index_col = 0)
+    
+    delta = 5
+    delta_t_by_bin = 0.05
+    nbins = int(delta * 2 / delta_t_by_bin)
 
+    chans = [chan for chan in spindles['Channel'].unique() if not chan in ['T4','T3','O1','O2']]
+    stages = ['N2','N3']
 
+    nrows = len(stages)
+    ncols = len(chans)
+
+    fig, axs = plt.subplots(nrows, ncols, figsize = (20,5), constrained_layout = True)
+    fig.suptitle(subject, fontsize = 20,y=1.05)
+
+    for c, ch in enumerate(chans):
+        for r, stage in enumerate(stages):
+
+            sp = spindles[(spindles['Channel'] == ch) & (spindles['Stage_Letter'] == stage)]
+            sw = slowwaves[(slowwaves['Channel'] == ch) & (slowwaves['Stage_Letter'] == stage)]
+            cross = crosscorrelogram(sp['Peak'].values, sw['NegPeak'].values)
+            cross_sel = cross[(cross < delta) & (cross > -delta)]
+            N = cross_sel.size
+
+            ax = axs[r,c]
+            ax.set_title(f'{ch} - {stage} - N : {N}')
+            ax.hist(cross_sel, bins = nbins, align = 'mid')
+            ax.set_xlim(-delta,delta)
+    
+    plt.savefig(f'../events_stats/{subject}_cross_correlogram')
+    plt.close()
     
 
