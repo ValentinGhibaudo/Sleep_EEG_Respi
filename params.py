@@ -1,6 +1,6 @@
 # RUN KEYS
 # subjects = ['S1','S2','S3','S4','S5','S6','S7','S8','S9','S10','S11','S12','S13','S14','S15','S16','S17','S18','S19','S20']
-subjects = ['S1']
+subjects = ['S4']
 
 
 # USEFUL LISTS AND VARIABLES
@@ -32,7 +32,9 @@ clean_resp_features = {
 
 # SPINDLES DETECTION PARAMS
 freq_sp = (11, 16) # Spindles frequency range. YASA uses a FIR filter (implemented in MNE) with a 1.5Hz transition band, which means that for freq_sp = (12, 15 Hz), the -6 dB points are located at 11.25 and 15.75 Hz.
-sp_duration = (0.5, 2) # The minimum and maximum duration of the spindles. In secs
+# sp_duration = (0.5, 2) # The minimum and maximum duration of the spindles. In secs
+# sp_duration = (0.5, 4) # The minimum and maximum duration of the spindles. In secs # test nathalie 1 sur S10
+sp_duration = (0.5, 3) # The minimum and maximum duration of the spindles. In secs # test nathalie 2 sur S4
 sp_min_distance = 500 # If two spindles are closer than min_distance (in ms), they are merged into a single spindles. in milliseconds
 
 # 'rel_pow': Relative power (= power ratio freq_sp / freq_broad).
@@ -56,7 +58,8 @@ spindles_freq_threshold = {'S1':13.7,'S2':12.9,'S3':13.3,'S4':12.7,'S5':13.6,'S6
 freq_sw = (0.3, 1.5) # Slow wave frequency range, in Hz
 sw_dur_neg = (0.3, 1.5) # The minimum and maximum duration of the negative deflection of the slow wave, in secs
 sw_dur_pos = (0.1, 1) # The minimum and maximum duration of the positive deflection of the slow wave, in secs
-sw_amp_neg = (40,250) # Absolute minimum and maximum negative trough amplitude of the slow-wave. In µV
+# sw_amp_neg = (40,250) # Absolute minimum and maximum negative trough amplitude of the slow-wave. In µV
+sw_amp_neg = (20,250) # Absolute minimum and maximum negative trough amplitude of the slow-wave. In µV # nathalie 2 test 
 sw_amp_pos = (10,150) # Absolute minimum and maximum positive peak amplitude of the slow-wave. In µV
 sw_amp_ptp = (75,350) # Minimum and maximum peak-to-peak amplitude of the slow-wave. In µV
 

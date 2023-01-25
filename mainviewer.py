@@ -107,6 +107,25 @@ def get_viewer_from_run_key(run_key, parent=None, with_video=False):
         scatter_channels[i] = [chan]
         scatter_colors[i] = 'ff33ca'
         i += 1
+
+    for chan_name in mono_chans:
+        mask = spindles['Channel'] == chan_name
+        df = spindles[mask]
+        chan = list(channel_names).index(chan_name)
+        scatter_indexes[i] = (df['Start'] * srate).astype('int64')
+        scatter_channels[i] = [chan]
+        scatter_colors[i] = 'white'
+        i += 1
+
+    for chan_name in mono_chans:
+        mask = spindles['Channel'] == chan_name
+        df = spindles[mask]
+        chan = list(channel_names).index(chan_name)
+        scatter_indexes[i] = (df['End'] * srate).astype('int64')
+        scatter_channels[i] = [chan]
+        scatter_colors[i] = 'red'
+        i += 1
+    
     
     sigs = prepros_reref.sel(chan=mono_chans).values.T
     print(sigs.dtype)
@@ -201,7 +220,7 @@ def get_viewer_from_run_key(run_key, parent=None, with_video=False):
 
 def test_get_viewer():
     
-    run_key = 'S1'
+    run_key = 'S4'
 
     app = ev.mkQApp()
     win = get_viewer_from_run_key(run_key)

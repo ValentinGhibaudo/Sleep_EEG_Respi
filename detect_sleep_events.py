@@ -26,7 +26,7 @@ for subject in subjects:
         elif event_type == 'slow_wave':
             detec = yasa.sw_detect(data=data_eeg, sf=srate, ch_names=eeg_mono_chans, hypno=hypno_upsampled_int,
                                    include=(0,1,2,3,4), freq_sw=freq_sw, dur_neg=sw_dur_neg, dur_pos=sw_dur_pos,
-                                   amp_neg=sw_amp_neg, amp_pos=sw_amp_neg, amp_ptp=sw_amp_ptp, coupling=True,
+                                   amp_neg=sw_amp_neg, amp_pos=sw_amp_pos, amp_ptp=sw_amp_ptp, coupling=True,
                                    remove_outliers=True, verbose=False) # detection slow-waves
             destination_file = f'../event_detection/{subject}_slowwaves_reref_yasa.xlsx'
 
