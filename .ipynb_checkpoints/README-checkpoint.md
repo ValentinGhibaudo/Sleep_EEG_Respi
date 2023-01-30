@@ -12,16 +12,16 @@ Pipeline:
 - preproc_staging.py # Convert .edf raw signals preprocessed signals organized in multi-dimensional and labelized datarray (from Xarray) & Sleep staging with YASA on MNE object preprocessed & Compute spectrograms + hypnogram & Compute Sleep statistics (running time ~ 30 mins)
 
 # Event detection :
-- detect_sleep_events.py # Spindle & Slow-waves detection with YASA toolbox from eeg data (running time ~ 40 mins)
-- events_cooccuring.py # Spindle and Slow-Waves are labelized according to occurence of spindle in slowwaves or not
+- detect_sleep_events.py # Spindle & Slow-waves detection with YASA toolbox from eeg data (running time ~ 60 mins)
+- events_cooccuring.py # Spindle and Slow-Waves are labelized according to occurence of spindle in slowwaves or not (running time ~ 12 mins)
 - events_stats.py # Descriptive statistics on detected events (running time ~ 30 secs)
 
 # Respi : 
 - rsp_detection.py # Detect respiratory cycles and compute features for each cycle (running time ~5 mins)
 - rsp_tagging_by_sleep.py # Tag resp cycles with corresponding sleep stage, and notion of spindle or slow wave present inside (running time ~ 3 mins)
-- rsp_stats.ipynb # Compute statistics about respiratory cycles features : presence of events inside... sleep staging effect. (running time ~ 1 min)
-- events_to_resp_features.py # Compute correlations between respiration features and both event types features for each subject
-- cross_correlogram.py # Compute cross-correlograms of spindles times vs slow waves times and respi times
+- rsp_stats.py # Compute statistics about respiratory cycles features : presence of events inside... sleep staging effect. (running time ~ 1 min)
+- events_to_resp_features.py # Compute correlations between respiration features and both event types features for each subject (running time ~ 10 mins)
+- cross_correlogram.py # Compute cross-correlograms of spindles times vs slow waves times and respi times (running time ~ 10 mins)
 
 # Events coupling to respiration
 - events_coupling.py # Compute phase angles of NegPeak of slow waves and Peak of spindles along respiration phase (running time ~ 1 min)

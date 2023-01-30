@@ -12,7 +12,7 @@ events_tables = {'sp':[],'sw':[]} # prepare lists for event types to pool events
 
 for subject in subjects:
     for event_type in event_types:
-        events = pd.read_excel(f'../event_detection/{subject}_{event_types_loads[event_type]}_reref_{encoder_events}.xlsx',index_col = 0) # load events of the subject
+        events = pd.read_excel(f'../event_detection/{subject}_{event_types_loads[event_type]}_cooccuring.xlsx',index_col = 0) # load events of the subject
         events.insert(0, 'subject', subject) # add subject label at col 0
         events_tables[event_type].append(events) # add the dataframe of the subject to a list
 
@@ -26,6 +26,7 @@ for event_type in event_types:
     
     
 # FIG : BARPLOT OF PROPORTION OF EVENTS IN STAGES or CHANNELS 
+print('FIG 1')
 fig, axs = plt.subplots(nrows = 2, ncols = 2, figsize = (15,8), constrained_layout = True)
 
 for row, event_type in enumerate(event_types):
@@ -49,26 +50,29 @@ for row, event_type in enumerate(event_types):
         ax.set_ylabel(f'Proportion of {event_types_titles[event_type]}')
         ax.set_title(title)
 
-plt.savefig('../events_stats/barplots_events.tif', format = 'tif', dpi = dpis, bbox_inches = 'tight')
+plt.savefig('../events_stats/barplots_events', bbox_inches = 'tight')
 plt.close()
 
 # FIG x 2 : BOXPLOT OF PROPORTION OF EFFECT OF CHANNEL or STAGE ON THE EVENTS FEATURES 
+print('FIG 2')
+event_type_cooccur_label = {'sp':'in_slowwave', 'sw':'sp_inside'}
 for event_type in event_types:
     df_boxplot = events_df[event_type]
-    fig, axs = plt.subplots(nrows = 2, ncols = len(interesting_variables[event_type]), figsize = (20,5), constrained_layout = True) # boxplot effects of stage or chan on events params
+    fig, axs = plt.subplots(nrows = 3, ncols = len(interesting_variables[event_type]), figsize = (20,15), constrained_layout = True) # boxplot effects of stage or chan on events params
     fig.suptitle(f'{event_types_titles[event_type]} characteristics')
     for col, outcome in enumerate(interesting_variables[event_type]):
-        for row, predictor in enumerate(['Channel','Stage_Letter']):
+        for row, predictor in enumerate(['Channel','Stage_Letter',event_type_cooccur_label[event_type]]):
             ax = axs[row, col]
             sns.boxplot(data = df_boxplot, x = predictor, y = outcome, ax=ax)
             if predictor == 'Channel':
                 ax.tick_params(axis='x', rotation=90)
 
-    plt.savefig(f'../events_stats/{event_type}_boxplot.tif', format = 'tif', dpi = dpis, bbox_inches = 'tight')
+    plt.savefig(f'../events_stats/{event_type}_boxplot', bbox_inches = 'tight')
     plt.close()
     
     
 # FIG 3 : Density of spindles by chan by stage
+print('FIG 3')
 def get_stage_duration(sleep_stats, subject, stage):
     return sleep_stats.set_index('subject').loc[subject, stage]
 
@@ -116,6 +120,7 @@ plt.close()
 
 
 # DISTRIBUTIONS
+print('FIG 4')
 resp_features_to_include = ['cycle_duration','inspi_duration','expi_duration','cycle_freq','cycle_ratio','inspi_amplitude','expi_amplitude','inspi_volume','expi_volume']
 ev_features_to_include = {'sp':['Duration', 'Amplitude', 'RMS', 'AbsPower','RelPower', 'Frequency', 'Oscillations', 'Symmetry'],
 'sw':['Duration','ValNegPeak', 'ValPosPeak', 'PTP', 'Slope', 'Frequency','PhaseAtSigmaPeak', 'ndPAC']}
@@ -125,6 +130,7 @@ for event_type in event_types:
     df_events_staged = df_events[df_events['Stage_Letter'].isin(stages_events_select)]
     
     for subject in subjects:
+        print(subject)
         df_events_staged_subject = df_events_staged[df_events_staged['subject'] == subject]
         N = df_events_staged_subject.shape[0]
 
@@ -161,55 +167,6 @@ for event_type in event_types:
 
 
             
-# CROSS-CORRELOGRAM SPINDLES VS SLOWWAVES
-def crosscorrelogram(a,b):
-    """
-    Compute combinatorial difference between a vs b (a - b with all possibilities)
-    
-    ------------------
-    INPUTS :
-    a : 1D numpy vector
-    b : 1D numpy vector
-    
-    OUTPUT :
-    c : crosscorrelogram vector of shape (a.size*b.size,)
-    
-    """
-    c = a[:, np.newaxis] - b[np.newaxis, :]
-    return c.reshape(-1)
 
-for subject in subjects:
-    spindles = pd.read_excel(f'../event_detection/{subject}_spindles_reref_yasa.xlsx', index_col = 0)
-    slowwaves = pd.read_excel(f'../event_detection/{subject}_slowwaves_reref_yasa.xlsx', index_col = 0)
-    
-    delta = 5
-    delta_t_by_bin = 0.05
-    nbins = int(delta * 2 / delta_t_by_bin)
-
-    chans = [chan for chan in spindles['Channel'].unique() if not chan in ['T4','T3','O1','O2']]
-    stages = ['N2','N3']
-
-    nrows = len(stages)
-    ncols = len(chans)
-
-    fig, axs = plt.subplots(nrows, ncols, figsize = (20,5), constrained_layout = True)
-    fig.suptitle(subject, fontsize = 20,y=1.05)
-
-    for c, ch in enumerate(chans):
-        for r, stage in enumerate(stages):
-
-            sp = spindles[(spindles['Channel'] == ch) & (spindles['Stage_Letter'] == stage)]
-            sw = slowwaves[(slowwaves['Channel'] == ch) & (slowwaves['Stage_Letter'] == stage)]
-            cross = crosscorrelogram(sp['Peak'].values, sw['NegPeak'].values)
-            cross_sel = cross[(cross < delta) & (cross > -delta)]
-            N = cross_sel.size
-
-            ax = axs[r,c]
-            ax.set_title(f'{ch} - {stage} - N : {N}')
-            ax.hist(cross_sel, bins = nbins, align = 'mid')
-            ax.set_xlim(-delta,delta)
-    
-    plt.savefig(f'../events_stats/{subject}_cross_correlogram')
-    plt.close()
     
 

@@ -28,7 +28,7 @@ stages = ['N2','N3']
 
 
 
-delta = 1
+delta = 1.5
 delta_t_by_bin = 0.05
 nbins = int(delta * 2 / delta_t_by_bin)
 
@@ -51,7 +51,7 @@ for subject in subjects:
 
             sp = spindles[(spindles['Channel'] == ch) & (spindles['Stage_Letter'] == stage)]
             sw = slowwaves[(slowwaves['Channel'] == ch) & (slowwaves['Stage_Letter'] == stage)]
-            cross = crosscorrelogram(sp['Peak'].values, sw['NegPeak'].values)
+            cross = crosscorrelogram(sp[timestamps_labels['sp']].values, sw[timestamps_labels['sw']].values)
             cross_sel = cross[(cross < delta) & (cross > -delta)]
             N = cross_sel.size
 
@@ -71,7 +71,7 @@ delta = 4
 delta_t_by_bin = 0.2
 nbins = int(delta * 2 / delta_t_by_bin)
 
-peak_labels = {'spindles':'Peak','slowwaves':'NegPeak'}
+peak_labels = {'spindles':timestamps_labels['sp'],'slowwaves':timestamps_labels['sw']}
 resp_transition_label = {'ei':'start_time','ie':'transition_time'}
 
 for subject in subjects:

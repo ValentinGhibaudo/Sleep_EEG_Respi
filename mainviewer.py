@@ -24,7 +24,8 @@ from myqt import QT, DebugDecorator
 
 
 ### PARAMS
-mono_chans = ['Fp1','Fp2','Fz','C4','C3','Cz','Pz']
+mono_chans = ['Fp1','Fp2','Fz','C4','C3','Cz']
+# mono_chans = ['Fp1','Fp2','Fz','C4','C3','Cz','Pz']
 bipol_chans = ['Fp1-C3','Fp2-C4','C3-T3','C4-T4']
 
 ###
@@ -45,6 +46,7 @@ def get_viewer_from_run_key(run_key, parent=None, with_video=False):
     
     
     spindles = pd.read_excel(base_folder / 'event_detection' / f'{run_key}_spindles_reref_yasa.xlsx')
+    spindles_homemade = pd.read_excel(base_folder / 'event_detection' / f'{run_key}_sp_homemade.xlsx')
     slowwaves = pd.read_excel(base_folder / 'event_detection' / f'{run_key}_slowwaves_reref_yasa.xlsx')
     
     
@@ -114,7 +116,7 @@ def get_viewer_from_run_key(run_key, parent=None, with_video=False):
         chan = list(channel_names).index(chan_name)
         scatter_indexes[i] = (df['Start'] * srate).astype('int64')
         scatter_channels[i] = [chan]
-        scatter_colors[i] = 'white'
+        scatter_colors[i] = 'ffffff'
         i += 1
 
     for chan_name in mono_chans:
@@ -123,7 +125,35 @@ def get_viewer_from_run_key(run_key, parent=None, with_video=False):
         chan = list(channel_names).index(chan_name)
         scatter_indexes[i] = (df['End'] * srate).astype('int64')
         scatter_channels[i] = [chan]
-        scatter_colors[i] = 'red'
+        scatter_colors[i] = 'ff0000'
+        i += 1
+
+### homemade
+    for chan_name in mono_chans:
+        mask = spindles_homemade['channel'] == chan_name
+        df = spindles_homemade[mask]
+        chan = list(channel_names).index(chan_name)
+        scatter_indexes[i] = (df['start_t'] * srate).astype('int64')
+        scatter_channels[i] = [chan]
+        scatter_colors[i] = '00F404'
+        i += 1
+
+    for chan_name in mono_chans:
+        mask = spindles_homemade['channel'] == chan_name
+        df = spindles_homemade[mask]
+        chan = list(channel_names).index(chan_name)
+        scatter_indexes[i] = (df['peak_t'] * srate).astype('int64')
+        scatter_channels[i] = [chan]
+        scatter_colors[i] = 'B8B8B8'
+        i += 1
+
+    for chan_name in mono_chans:
+        mask = spindles_homemade['channel'] == chan_name
+        df = spindles_homemade[mask]
+        chan = list(channel_names).index(chan_name)
+        scatter_indexes[i] = (df['stop_t'] * srate).astype('int64')
+        scatter_channels[i] = [chan]
+        scatter_colors[i] = '000BED'
         i += 1
     
     

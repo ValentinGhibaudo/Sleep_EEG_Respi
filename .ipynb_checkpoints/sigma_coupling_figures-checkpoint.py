@@ -44,7 +44,7 @@ for subject in subjects:
         else:
             plt.colorbar(im, ax = axs[col])
 
-    plt.savefig(f'../sigma_coupling_figures/{subject}_phase_freq.tif', bbox_inches = 'tight', dpi = dpis)
+    plt.savefig(f'../sigma_coupling_figures/{subject}_phase_freq', bbox_inches = 'tight', dpi = dpis)
     plt.close()
 
 
@@ -76,7 +76,7 @@ for r in range(nrows):
         else:
             plt.colorbar(im, ax = axs[r,c])
             
-plt.savefig(f'../sigma_coupling_figures/mean_phase_freq_subjects_detailed.tif', bbox_inches = 'tight', dpi = dpis)
+plt.savefig(f'../sigma_coupling_figures/mean_phase_freq_subjects_detailed', bbox_inches = 'tight', dpi = dpis)
 plt.close()
 
 
@@ -98,5 +98,5 @@ ax.set_xlabel('Respiration phase')
 ax.set_xticks([0, 0, transition_ratio, 1])
 ax.set_xticklabels([0, 0, 'inspi-expi', '2*Pi'], rotation=45, fontsize=10)
 plt.colorbar(im, ax = ax, label = 'Power in A.U.')
-plt.savefig(f'../sigma_coupling_figures/mean_phase_freq_across_subjects.tif', bbox_inches = 'tight', dpi = dpis)
+plt.savefig(f'../sigma_coupling_figures/mean_phase_freq_across_subjects', bbox_inches = 'tight', dpi = dpis)
 plt.close()
