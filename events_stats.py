@@ -58,7 +58,7 @@ print('FIG 2')
 event_type_cooccur_label = {'sp':'in_slowwave', 'sw':'sp_inside'}
 for event_type in event_types:
     df_boxplot = events_df[event_type]
-    fig, axs = plt.subplots(nrows = 3, ncols = len(interesting_variables[event_type]), figsize = (20,15), constrained_layout = True) # boxplot effects of stage or chan on events params
+    fig, axs = plt.subplots(nrows = 3, ncols = len(interesting_variables[event_type]), figsize = (20,10), constrained_layout = True) # boxplot effects of stage or chan on events params
     fig.suptitle(f'{event_types_titles[event_type]} characteristics')
     for col, outcome in enumerate(interesting_variables[event_type]):
         for row, predictor in enumerate(['Channel','Stage_Letter',event_type_cooccur_label[event_type]]):
@@ -123,7 +123,7 @@ plt.close()
 print('FIG 4')
 resp_features_to_include = ['cycle_duration','inspi_duration','expi_duration','cycle_freq','cycle_ratio','inspi_amplitude','expi_amplitude','inspi_volume','expi_volume']
 ev_features_to_include = {'sp':['Duration', 'Amplitude', 'RMS', 'AbsPower','RelPower', 'Frequency', 'Oscillations', 'Symmetry'],
-'sw':['Duration','ValNegPeak', 'ValPosPeak', 'PTP', 'Slope', 'Frequency','PhaseAtSigmaPeak', 'ndPAC']}
+'sw':['Duration','ValNegPeak', 'ValPosPeak', 'PTP', 'Slope', 'Frequency']}
 
 for event_type in event_types:
     df_events = events_df[event_type]
@@ -133,9 +133,13 @@ for event_type in event_types:
         print(subject)
         df_events_staged_subject = df_events_staged[df_events_staged['subject'] == subject]
         N = df_events_staged_subject.shape[0]
-
+        
         nrows = 2
-        ncols = 4
+        if event_type == 'sp':
+            ncols = 4
+        else:
+            ncols = 3
+            
         ev_features_to_include_array = np.array(ev_features_to_include[event_type]).reshape(nrows,ncols)
         fig, axs = plt.subplots(nrows, ncols, figsize = (20,10), constrained_layout = True)
         fig.suptitle(f'{subject} - N : {int(N)} {event_types_titles[event_type]}', fontsize = 20, y = 1.05)

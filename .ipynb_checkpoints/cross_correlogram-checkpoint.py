@@ -44,7 +44,7 @@ for subject in subjects:
     ncols = len(chans)
 
     fig, axs = plt.subplots(nrows, ncols, figsize = (20,5), constrained_layout = True)
-    fig.suptitle(subject, fontsize = 20)
+    fig.suptitle(f'{subject} : sp - sw', fontsize = 20)
 
     for c, ch in enumerate(chans):
         for r, stage in enumerate(stages):

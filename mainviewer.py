@@ -24,8 +24,7 @@ from myqt import QT, DebugDecorator
 
 
 ### PARAMS
-mono_chans = ['Fp1','Fp2','Fz','C4','C3','Cz']
-# mono_chans = ['Fp1','Fp2','Fz','C4','C3','Cz','Pz']
+mono_chans = ['Fz','Fp1','Fp2','C4','C3','Cz','Pz']
 bipol_chans = ['Fp1-C3','Fp2-C4','C3-T3','C4-T4']
 
 ###
@@ -46,7 +45,7 @@ def get_viewer_from_run_key(run_key, parent=None, with_video=False):
     
     
     spindles = pd.read_excel(base_folder / 'event_detection' / f'{run_key}_spindles_reref_yasa.xlsx')
-    spindles_homemade = pd.read_excel(base_folder / 'event_detection' / f'{run_key}_sp_homemade.xlsx')
+    # spindles_homemade = pd.read_excel(base_folder / 'event_detection' / f'{run_key}_sp_homemade.xlsx')
     slowwaves = pd.read_excel(base_folder / 'event_detection' / f'{run_key}_slowwaves_reref_yasa.xlsx')
     
     
@@ -92,6 +91,17 @@ def get_viewer_from_run_key(run_key, parent=None, with_video=False):
     scatter_channels = {}
     scatter_colors = {}
     i = 0
+
+    # SLOWWAVES
+    for chan_name in mono_chans:
+        mask = slowwaves['Channel'] == chan_name
+        df = slowwaves[mask]
+        chan = list(channel_names).index(chan_name)
+        scatter_indexes[i] = (df['Start'] * srate).astype('int64')
+        scatter_channels[i] = [chan]
+        scatter_colors[i] = '00F404'
+        i += 1
+
     for chan_name in mono_chans:
         mask = slowwaves['Channel'] == chan_name
         df = slowwaves[mask]
@@ -101,6 +111,16 @@ def get_viewer_from_run_key(run_key, parent=None, with_video=False):
         scatter_colors[i] = 'f3ff33'
         i += 1
 
+    for chan_name in mono_chans:
+        mask = slowwaves['Channel'] == chan_name
+        df = slowwaves[mask]
+        chan = list(channel_names).index(chan_name)
+        scatter_indexes[i] = (df['End'] * srate).astype('int64')
+        scatter_channels[i] = [chan]
+        scatter_colors[i] = '000BED'
+        i += 1
+
+    # SPINDLES
     for chan_name in mono_chans:
         mask = spindles['Channel'] == chan_name
         df = spindles[mask]
@@ -129,32 +149,32 @@ def get_viewer_from_run_key(run_key, parent=None, with_video=False):
         i += 1
 
 ### homemade
-    for chan_name in mono_chans:
-        mask = spindles_homemade['channel'] == chan_name
-        df = spindles_homemade[mask]
-        chan = list(channel_names).index(chan_name)
-        scatter_indexes[i] = (df['start_t'] * srate).astype('int64')
-        scatter_channels[i] = [chan]
-        scatter_colors[i] = '00F404'
-        i += 1
+    # for chan_name in mono_chans:
+    #     mask = spindles_homemade['channel'] == chan_name
+    #     df = spindles_homemade[mask]
+    #     chan = list(channel_names).index(chan_name)
+    #     scatter_indexes[i] = (df['start_t'] * srate).astype('int64')
+    #     scatter_channels[i] = [chan]
+    #     scatter_colors[i] = '00F404'
+    #     i += 1
 
-    for chan_name in mono_chans:
-        mask = spindles_homemade['channel'] == chan_name
-        df = spindles_homemade[mask]
-        chan = list(channel_names).index(chan_name)
-        scatter_indexes[i] = (df['peak_t'] * srate).astype('int64')
-        scatter_channels[i] = [chan]
-        scatter_colors[i] = 'B8B8B8'
-        i += 1
+    # for chan_name in mono_chans:
+    #     mask = spindles_homemade['channel'] == chan_name
+    #     df = spindles_homemade[mask]
+    #     chan = list(channel_names).index(chan_name)
+    #     scatter_indexes[i] = (df['peak_t'] * srate).astype('int64')
+    #     scatter_channels[i] = [chan]
+    #     scatter_colors[i] = 'B8B8B8'
+    #     i += 1
 
-    for chan_name in mono_chans:
-        mask = spindles_homemade['channel'] == chan_name
-        df = spindles_homemade[mask]
-        chan = list(channel_names).index(chan_name)
-        scatter_indexes[i] = (df['stop_t'] * srate).astype('int64')
-        scatter_channels[i] = [chan]
-        scatter_colors[i] = '000BED'
-        i += 1
+    # for chan_name in mono_chans:
+    #     mask = spindles_homemade['channel'] == chan_name
+    #     df = spindles_homemade[mask]
+    #     chan = list(channel_names).index(chan_name)
+    #     scatter_indexes[i] = (df['stop_t'] * srate).astype('int64')
+    #     scatter_channels[i] = [chan]
+    #     scatter_colors[i] = '000BED'
+    #     i += 1
     
     
     sigs = prepros_reref.sel(chan=mono_chans).values.T
@@ -175,10 +195,10 @@ def get_viewer_from_run_key(run_key, parent=None, with_video=False):
     view5 = TimeFreqViewer(source=source, name='tfr')
     win.add_view(view5)
     view5.params['show_axis'] = True
-    view5.params['timefreq', 'deltafreq'] = 0.5
+    view5.params['timefreq', 'deltafreq'] = 0.2
     view5.params['timefreq', 'f0'] = 3.
-    view5.params['timefreq', 'f_start'] = 11.
-    view5.params['timefreq', 'f_stop'] = 17.
+    view5.params['timefreq', 'f_start'] = 10.
+    view5.params['timefreq', 'f_stop'] = 20.
     for c, chan_name in enumerate(channel_names):
         view5.by_channel_params[ f'ch{c}' ,'visible'] = c < 1
 
@@ -237,7 +257,7 @@ def get_viewer_from_run_key(run_key, parent=None, with_video=False):
     # win.add_view(view6, location='right',  orientation='vertical')
 
 
-    win.set_xsize(60.)
+    win.set_xsize(30.)
 
     win.auto_scale()
     
@@ -250,7 +270,7 @@ def get_viewer_from_run_key(run_key, parent=None, with_video=False):
 
 def test_get_viewer():
     
-    run_key = 'S4'
+    run_key = 'S14'
 
     app = ev.mkQApp()
     win = get_viewer_from_run_key(run_key)

@@ -12,7 +12,7 @@ def corr_matrix_resp_events(resp, events, event_type, ax=None):
         event_features_to_include = ['Duration', 'Amplitude', 'RMS', 'AbsPower','RelPower', 'Frequency', 'Oscillations', 'Symmetry']
     elif event_type == 'slowwaves':
         event_peak_label = 'NegPeak'
-        event_features_to_include = ['Duration','ValNegPeak', 'ValPosPeak', 'PTP', 'Slope', 'Frequency','PhaseAtSigmaPeak', 'ndPAC',]
+        event_features_to_include = ['Duration','ValNegPeak', 'ValPosPeak', 'PTP', 'Slope', 'Frequency']
     rows = []
     for c, row in resp.iterrows():
         tmin = row['start_time']

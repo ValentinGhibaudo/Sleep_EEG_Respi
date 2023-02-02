@@ -2,9 +2,43 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 import yasa
+import json
 from params import *
 
 mapper = {0:'W',1:'N1',2:'N2',3:'N3',4:'R'} # mapper from int stage to str stage (same than YASA)
+
+def save_dict(dictionnary, path):
+    file = json.dumps(dictionnary) # create json object from dictionary
+    with open(path, 'w',encoding='utf-8') as convert_file:
+        convert_file.write(file)
+
+save_running_params = {'run_keys':subjects,
+                       'srate':srate,
+                       'ch_names':eeg_mono_chans,
+                       'sp':{
+                           'freq_sp':freq_sp,
+                           'duration':sp_duration,
+                           'min_distance':sp_min_distance,
+                           'thresh':sp_thresh,
+                           'remove_outliers':remove_outliers_sp,
+                           'include':include_sp_stages},
+                        'sw':{
+                            'freq_sw':freq_sw,
+                            'dur_neg':sw_dur_neg,
+                            'dur_pos':sw_dur_pos,
+                            'amp_neg':sw_amp_neg,
+                            'amp_pos':sw_amp_pos,
+                            'amp_ptp':sw_amp_ptp,
+                            'remove_outliers':remove_outliers_sw,
+                            'include':include_sw_stages
+                        }
+                       }
+                      
+print('RUNNING PARAMS')
+print(save_running_params)
+
+save_dict(save_running_params, path = '../event_detection/running_params')
+                           
 
 for subject in subjects:
     print(subject)
@@ -20,19 +54,22 @@ for subject in subjects:
         if event_type == 'spindle':
             detec = yasa.spindles_detect(data=data_eeg, sf=srate, ch_names=eeg_mono_chans,freq_sp=freq_sp,
                                          duration=sp_duration, min_distance=sp_min_distance, thresh=sp_thresh,
-                                         multi_only=False, remove_outliers=True, hypno = hypno_upsampled_int,
-                                         include = (0,1,2,3,4)) # detection spindles
+                                         multi_only=False, remove_outliers=remove_outliers_sp, hypno = hypno_upsampled_int,
+                                         include = include_sp_stages, verbose = 'critical') # detection spindles
             destination_file = f'../event_detection/{subject}_spindles_reref_yasa.xlsx'
         elif event_type == 'slow_wave':
             detec = yasa.sw_detect(data=data_eeg, sf=srate, ch_names=eeg_mono_chans, hypno=hypno_upsampled_int,
-                                   include=(0,1,2,3,4), freq_sw=freq_sw, dur_neg=sw_dur_neg, dur_pos=sw_dur_pos,
-                                   amp_neg=sw_amp_neg, amp_pos=sw_amp_pos, amp_ptp=sw_amp_ptp, coupling=True,
-                                   remove_outliers=True, verbose=False) # detection slow-waves
+                                   include=include_sw_stages, freq_sw=freq_sw, dur_neg=sw_dur_neg, dur_pos=sw_dur_pos,
+                                   amp_neg=sw_amp_neg, amp_pos=sw_amp_pos, amp_ptp=sw_amp_ptp, coupling=False,
+                                   remove_outliers=remove_outliers_sw, verbose='critical') # detection slow-waves
             destination_file = f'../event_detection/{subject}_slowwaves_reref_yasa.xlsx'
 
         events = detec.summary() # get results summary
         events['Stage_Letter'] = events['Stage'].map(mapper) # add a column with letters instead of numbers for staging
 
         events.to_excel(destination_file) # save
+        
+        
+        
 
     
