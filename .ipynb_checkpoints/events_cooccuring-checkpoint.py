@@ -47,16 +47,16 @@ def cooccuring_sp_sw_df(spindles, slowwaves):
                             
                             
                         
-    cooccurors = pd.DataFrame(features_cooccuring_sp, columns = ['index','in_slowwave','t_vs_NegPeak_sw','t_vs_Start_sw','relative_t_in_sw']).set_index('index') # spindle cooccuring df
+    cooccurors = pd.DataFrame(features_cooccuring_sp, columns = ['index','cooccuring','t_vs_NegPeak_sw','t_vs_Start_sw','relative_t_in_sw']).set_index('index') # spindle cooccuring df
     
     sp_return = spindles.reindex(columns = list(spindles.columns) + list(cooccurors.columns)) # extend the columns of the initial spindle df
     sp_return.loc[cooccurors.index,cooccurors.columns] = cooccurors # add the cooccuring df to initial spindle df
-    sp_return.loc[:,'in_slowwave'] = sp_return['in_slowwave'].fillna(False) # fill na with False
+    sp_return.loc[:,'cooccuring'] = sp_return['cooccuring'].fillna(False) # fill na with False
     
     slowwaves_return = slowwaves.copy()
-    slowwaves_return['sp_inside'] = np.nan 
-    slowwaves_return.loc[sw_with_spindle_inside, 'sp_inside'] = True # add a column in the slowwave df with idea of presence of spindle inside or not
-    slowwaves_return.loc[:,'sp_inside'] = slowwaves_return['sp_inside'].fillna(False)
+    slowwaves_return['cooccuring'] = np.nan 
+    slowwaves_return.loc[sw_with_spindle_inside, 'cooccuring'] = True # add a column in the slowwave df with idea of presence of spindle inside or not
+    slowwaves_return.loc[:,'cooccuring'] = slowwaves_return['cooccuring'].fillna(False)
     
     return sp_return, slowwaves_return
 

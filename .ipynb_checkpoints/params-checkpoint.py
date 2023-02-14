@@ -1,5 +1,6 @@
 # RUN KEYS
 subjects = ['S1','S2','S3','S4','S5','S6','S7','S8','S9','S10','S11','S12','S13','S14','S15','S16','S17','S18','S19','S20']
+# subjects = ['S12','S13','S14','S15','S16','S17','S18','S19','S20']
 # subjects = ['S4']
 
 
@@ -39,8 +40,8 @@ sp_min_distance = 500 # If two spindles are closer than min_distance (in ms), th
 # 'corr': Moving correlation between original signal and sigma-filtered signal.
 # 'rms': Number of standard deviations above the mean of a moving root mean square of sigma-filtered signal.
 sp_thresh = {'corr': None, 'rel_pow': None, 'rms': 1.4} # default = 0.65 , 0.2 , 1.5 
-remove_outliers_sp = False
-include_sp_stages = (2,3) 
+remove_outliers_sp = False # remove or not outliers by YASA using sklearn.ensemble.IsolationForest. 
+include_sp_stages = (2,3) # 
 
 
 
@@ -56,7 +57,7 @@ spindles_freq_threshold = {'S1':13.7,'S2':12.9,'S3':13.3,'S4':12.7,'S5':13.6,'S6
 
 
 # SLOW WAVES DETECTION PARAMS
-remove_outliers_sw = False
+remove_outliers_sw = False # remove or not outliers by YASA using sklearn.ensemble.IsolationForest. 
 include_sw_stages = (2,3)
 
 freq_sw = (0.3, 1.5) # Slow wave frequency range, in Hz
@@ -89,7 +90,7 @@ encoder_events = 'yasa'
 # EVENTS TIMESTAMPS LABELS TO SUMMARIZE AN EVENT (SPINDLE or SLOWWAVE) TO ON TIMING
 timestamps_labels = {'sp':'Start','sw':'NegPeak'} # labels = colnames of the yasa detection output
 # CHANNELS EVENTS TO KEEP
-channels_events_select =  ['Fz'] # only events detected in these channels are kept
+channels_events_select =  ['Fp2','Fp1','Fz','C4','C3','Cz','T4','T3','Pz','O1','O2'] # only events detected in these channels are kept
 # STAGE EVENTS TO KEEP
 stages_events_select =  ['N2','N3'] # only events detected during these sleep stages are kept
 
