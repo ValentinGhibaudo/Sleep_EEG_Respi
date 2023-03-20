@@ -1,7 +1,5 @@
 import numpy as np
 import pandas as pd
-import json
-import xarray as xr
 from params import subjects, timestamps_labels, channels_events_select, stages_events_select
 
 ###### USEFUL FUNCTIONS

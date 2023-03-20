@@ -55,7 +55,7 @@ plt.close()
 
 # FIG x 2 : BOXPLOT OF PROPORTION OF EFFECT OF CHANNEL or STAGE ON THE EVENTS FEATURES 
 print('FIG 2')
-event_type_cooccur_label = {'sp':'in_slowwave', 'sw':'sp_inside'}
+event_type_cooccur_label = {'sp':'cooccuring', 'sw':'cooccuring'}
 for event_type in event_types:
     df_boxplot = events_df[event_type]
     fig, axs = plt.subplots(nrows = 3, ncols = len(interesting_variables[event_type]), figsize = (20,10), constrained_layout = True) # boxplot effects of stage or chan on events params
@@ -109,11 +109,23 @@ for r, ev in enumerate(evs):
     ax = axs[r]
     sns.pointplot(data = df_plot , x = 'chan', y= 'density_by_stage_by_chan', hue = 'stage', ax=ax, order = order)
     ax.set_title(ev)
-    # ax.set_ylim(0,4)
     ax.set_ylabel(f"Density of {ev} by minute / stage / chan")
 
 plt.savefig('../events_stats/density_events')
 plt.close()
+
+
+for sub in subjects:
+    fig, axs = plt.subplots(nrows =2, figsize = (15,10), constrained_layout = True)
+    for r, ev in enumerate(evs):
+        df_plot = df_density[(df_density['event'] == ev) & (df_density['subject'] == sub)]
+        ax = axs[r]
+        sns.pointplot(data = df_plot , x = 'chan', y= 'density_by_stage_by_chan', hue = 'stage', ax=ax, order = order)
+        ax.set_title(f'{sub} - {ev}')
+        ax.set_ylabel(f"Density of {ev} by minute / stage / chan")
+
+    plt.savefig(f'../events_stats/density_events_{sub}')
+    plt.close()
 
 
 

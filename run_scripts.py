@@ -2,9 +2,18 @@ import subprocess
 import time
 
 # set list of script to run in the desired order
-# program_list =['detect_sleep_events.py','events_stats.py','rsp_tagging_by_sleep.py','rsp_stats.py','events_to_resp_features.py',
-#                'events_stats.py','events_coupling.py','events_coupling_stats.py','events_coupling_figs.py','sigma_coupling.py',
-#                'sigma_coupling_stats.py','sigma_coupling_means.py','sigma_coupling_figures.py']
+detection_to_figures =['detect_sleep_events.py','events_cooccuring.py','events_stats.py',
+'rsp_tagging_by_sleep.py','rsp_stats.py','events_to_resp_features.py','cross_correlogram.py',
+'events_coupling.py','events_coupling_stats.py','events_coupling_figs.py',
+'sigma_coupling.py','sigma_coupling_stats.py','sigma_coupling_means.py','sigma_coupling_figures.py'
+]
+
+program_list =['events_cooccuring.py','events_stats.py',
+'rsp_tagging_by_sleep.py','rsp_stats.py','events_to_resp_features.py','cross_correlogram.py',
+'events_coupling.py','events_coupling_stats.py','events_coupling_figs.py',
+'sigma_coupling.py','sigma_coupling_stats.py','sigma_coupling_means.py','sigma_coupling_figures.py'
+]
+
 # program_list =['rsp_detection.py','rsp_tagging_by_sleep.py','rsp_stats.py','events_to_resp_features.py',
 #                'events_stats.py','events_coupling.py','events_coupling_stats.py','events_coupling_figs.py']
 # program_list = ['events_coupling.py','events_coupling_stats.py','events_coupling_figs.py']
@@ -14,11 +23,16 @@ import time
 #         'events_coupling.py','events_coupling_stats.py','events_coupling_figs.py']
 # program_list = ['events_to_resp_features.py','cross_correlogram.py','sigma_coupling.py',
 #                 'sigma_coupling_stats.py','sigma_coupling_means.py','sigma_coupling_figures.py']
-program_list =['events_coupling.py','events_coupling_figs.py']
+# program_list =['events_coupling.py','events_coupling_figs.py']
+
+
+
+# CHOOSE LIST TO COMPUTE
+loop = program_list
 
 
 # RUN
-for program in program_list:
+for program in loop:
     print(f'Running {program}')
     t1 = time.perf_counter()
     subprocess.run(['python', program]) 
