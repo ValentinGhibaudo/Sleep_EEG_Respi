@@ -70,9 +70,9 @@ include_sw_stages = (2,3)
 freq_sw = (0.3, 1.5) # Slow wave frequency range, in Hz
 sw_dur_neg = (0.3, 1.5) # The minimum and maximum duration of the negative deflection of the slow wave, in secs
 sw_dur_pos = (0.1, 1) # The minimum and maximum duration of the positive deflection of the slow wave, in secs
-sw_amp_neg = (40,200) # Absolute minimum and maximum negative trough amplitude of the slow-wave. In µV 
+sw_amp_neg = (30,250) # Absolute minimum and maximum negative trough amplitude of the slow-wave. In µV 
 sw_amp_pos = (10,150) # Absolute minimum and maximum positive peak amplitude of the slow-wave. In µV
-sw_amp_ptp = (75,350) # Minimum and maximum peak-to-peak amplitude of the slow-wave. In µV
+sw_amp_ptp = (40,350) # Minimum and maximum peak-to-peak amplitude of the slow-wave. In µV
 
 """The Sleep Slow Oscillation as a Traveling Wave, Massimini et al, 2004 : The criteria for the detection of the slow oscillation were applied independently to each local average (bandpass, 0.1–4 Hz) and were
 as follows (Fig. 1B, inset): (1) a negative zero crossing and a subsequent

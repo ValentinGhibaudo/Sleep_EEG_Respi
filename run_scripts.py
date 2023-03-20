@@ -28,7 +28,7 @@ program_list =['events_cooccuring.py','events_stats.py',
 
 
 # CHOOSE LIST TO COMPUTE
-loop = program_list
+loop = detection_to_figures
 
 
 # RUN

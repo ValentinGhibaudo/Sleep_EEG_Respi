@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import netCDF4
+
 from params import subjects, srate
 
 from configuration import base_folder
