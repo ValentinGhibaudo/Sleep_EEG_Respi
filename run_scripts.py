@@ -28,7 +28,7 @@ program_list =['events_cooccuring.py','events_stats.py',
 test_new_thresh_laure = ['detect_sleep_events.py']
 
 # CHOOSE LIST TO COMPUTE
-loop = detection_to_figures
+loop = test_new_thresh_laure
 
 
 # RUN

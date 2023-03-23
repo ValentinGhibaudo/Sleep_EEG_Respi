@@ -1,7 +1,7 @@
 # RUN KEYS
-subjects = ['S1','S2','S3','S4','S5','S6','S7','S8','S9','S10','S11','S12','S13','S14','S15','S16','S17','S18','S19','S20']
+# subjects = ['S1','S2','S3','S4','S5','S6','S7','S8','S9','S10','S11','S12','S13','S14','S15','S16','S17','S18','S19','S20']
 # subjects = ['S12','S13','S14','S15','S16','S17','S18','S19','S20']
-# subjects = ['S1']
+subjects = ['S1']
 
 
 # USEFUL LISTS AND VARIABLES
@@ -40,6 +40,7 @@ sp_min_distance = 500 # If two spindles are closer than min_distance (in ms), th
 # 'corr': Moving correlation between original signal and sigma-filtered signal.
 # 'rms': Number of standard deviations above the mean of a moving root mean square of sigma-filtered signal.
 sp_thresh = {'corr': 0.65, 'rel_pow': 0.2, 'rms': 1.5} # default = 0.65 , 0.2 , 1.5 
+# sp_thresh = {'corr': None, 'rel_pow': None, 'rms': 1} # default = 0.65 , 0.2 , 1.5
 remove_outliers_sp = False # remove or not outliers by YASA using sklearn.ensemble.IsolationForest. 
 include_sp_stages = (2,3) # 
 

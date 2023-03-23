@@ -36,8 +36,6 @@ mono_chans = ['Fz','Fp1','Fp2','C4','C3','Cz','Pz']
 def get_viewer_from_run_key(run_key, parent=None, with_video=False):
     settings_name = None
     
-    
-    prepros_bipol = xr.open_dataarray(base_folder / 'preproc' / f'{run_key}_bipol.nc')
     prepros_reref = xr.open_dataarray(base_folder / 'preproc' / f'{run_key}_reref.nc')
     resp_features = pd.read_excel(base_folder / 'resp_features' / f'{run_key}_resp_features.xlsx')
     hypnos = pd.read_excel(base_folder / 'hypnos'/  f'hypno_{run_key}_yasa.xlsx')
@@ -71,7 +69,7 @@ def get_viewer_from_run_key(run_key, parent=None, with_video=False):
     t_start = 0
 
     #respi
-    sig_resp = prepros_bipol.sel(chan='DEBIT').values[:, None]
+    sig_resp = prepros_reref.sel(chan='DEBIT').values[:, None]
     
     view1 = TraceViewer.from_numpy( sig_resp, srate, t_start, 'resp', channel_names=['resp'],
                 scatter_indexes=scatter_indexes_resp, scatter_channels=scatter_channels_resp, scatter_colors=scatter_colors_resp)
