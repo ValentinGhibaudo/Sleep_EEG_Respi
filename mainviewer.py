@@ -27,7 +27,6 @@ from myqt import QT, DebugDecorator
 
 ### PARAMS
 mono_chans = ['Fz','Fp1','Fp2','C4','C3','Cz','Pz']
-bipol_chans = ['Fp1-C3','Fp2-C4','C3-T3','C4-T4']
 
 ###
 
@@ -47,7 +46,6 @@ def get_viewer_from_run_key(run_key, parent=None, with_video=False):
     
     
     spindles = pd.read_excel(base_folder / 'event_detection' / f'{run_key}_spindles_reref_yasa.xlsx')
-    # spindles_homemade = pd.read_excel(base_folder / 'event_detection' / f'{run_key}_sp_homemade.xlsx')
     slowwaves = pd.read_excel(base_folder / 'event_detection' / f'{run_key}_slowwaves_reref_yasa.xlsx')
     
     
@@ -149,34 +147,6 @@ def get_viewer_from_run_key(run_key, parent=None, with_video=False):
         scatter_channels[i] = [chan]
         scatter_colors[i] = 'ff0000'
         i += 1
-
-### homemade
-    # for chan_name in mono_chans:
-    #     mask = spindles_homemade['channel'] == chan_name
-    #     df = spindles_homemade[mask]
-    #     chan = list(channel_names).index(chan_name)
-    #     scatter_indexes[i] = (df['start_t'] * srate).astype('int64')
-    #     scatter_channels[i] = [chan]
-    #     scatter_colors[i] = '00F404'
-    #     i += 1
-
-    # for chan_name in mono_chans:
-    #     mask = spindles_homemade['channel'] == chan_name
-    #     df = spindles_homemade[mask]
-    #     chan = list(channel_names).index(chan_name)
-    #     scatter_indexes[i] = (df['peak_t'] * srate).astype('int64')
-    #     scatter_channels[i] = [chan]
-    #     scatter_colors[i] = 'B8B8B8'
-    #     i += 1
-
-    # for chan_name in mono_chans:
-    #     mask = spindles_homemade['channel'] == chan_name
-    #     df = spindles_homemade[mask]
-    #     chan = list(channel_names).index(chan_name)
-    #     scatter_indexes[i] = (df['stop_t'] * srate).astype('int64')
-    #     scatter_channels[i] = [chan]
-    #     scatter_colors[i] = '000BED'
-    #     i += 1
     
     
     sigs = prepros_reref.sel(chan=mono_chans).values.T
@@ -186,11 +156,7 @@ def get_viewer_from_run_key(run_key, parent=None, with_video=False):
     win.add_view(view2)
     view2.params['display_labels'] = True
     view2.params['scale_mode'] = 'same_for_all'
-    # view2.by_channel_params[ 'ch15' ,'visible'] = False
-    # for c, chan_name in enumerate(eeg_mono_chans):
-    #     view2.by_channel_params[ f'ch{c}' ,'visible'] = c < 11
-    
-    
+
     #### viewer 5 
     source = InMemoryAnalogSignalSource(sigs, srate, t_start, channel_names=channel_names)
     #create a time freq viewer conencted to the same source
@@ -204,21 +170,6 @@ def get_viewer_from_run_key(run_key, parent=None, with_video=False):
     for c, chan_name in enumerate(channel_names):
         view5.by_channel_params[ f'ch{c}' ,'visible'] = c < 1
 
-
-
-
-    #### viewer 3
-    # channel_names = bipol_chans
-    # sigs = prepros_bipol.sel(chan = bipol_chans).values.T
-    # view3 = TraceViewer.from_numpy(sigs,  srate, t_start, 'bipol', channel_names=channel_names)
-    # win.add_view(view3)
-    # view3.params['display_labels'] = True
-    # view3.params['scale_mode'] = 'same_for_all'
-    # # for c, chan_name in enumerate(channel_names):
-    # #     view3.by_channel_params[ f'ch{c}' ,'visible'] = c < 9
-
-    
-    
         
     #### viewer 4 
     periods = []
@@ -234,30 +185,6 @@ def get_viewer_from_run_key(run_key, parent=None, with_video=False):
 
     view4 = EpochViewer.from_numpy(periods, 'hypno')
     win.add_view(view4)
-
-    
-    ##### viewer 6 
-    # events = []
-    # events.append({
-    #     'time' : slowwaves['NegPeak'].values,
-    #     'duration' : np.zeros(slowwaves.shape[0]),
-    #     'label': slowwaves['Channel'].astype(str),
-    #     'name': 'Slow Waves ',
-    #     }
-    # )
-    # events.append({
-    #     'time' : spindles['Peak'].values,
-    #     'duration' : np.zeros(spindles.shape[0]),
-    #     'label': slowwaves['Channel'].astype(str),
-    #     'name': 'Spindles',
-    #     }
-    # )
-
-    
-    
-    # view6 = EventList.from_numpy(events, 'slowwaves')
-    # win.add_view(view6, location='right',  orientation='vertical')
-
 
     win.set_xsize(30.)
 
@@ -283,8 +210,6 @@ def test_get_viewer():
 
 
 if __name__ == '__main__':
-    #~ test_find_avi_file()
-    
     test_get_viewer()
     
     

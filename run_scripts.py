@@ -25,7 +25,7 @@ program_list =['events_cooccuring.py','events_stats.py',
 #                 'sigma_coupling_stats.py','sigma_coupling_means.py','sigma_coupling_figures.py']
 # program_list =['events_coupling.py','events_coupling_figs.py']
 
-
+test_new_thresh_laure = ['detect_sleep_events.py']
 
 # CHOOSE LIST TO COMPUTE
 loop = detection_to_figures

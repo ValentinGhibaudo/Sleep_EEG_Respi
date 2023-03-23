@@ -182,17 +182,25 @@ for chan in channels_events_select:
                     for cooccur in ['notcooccur','cooccur']:
                         angles = load_grouped_angles(subject = '*' , event = ev, stage = stage,cooccuring = cooccur, speed = speed, chan = chan)
                         
+                        if angles.size == 0:
+                            print(chan ,ev , cooccur)
+                            continue
                         pos = dict_figure[ev][stage][speed][cooccur]['pos']
                         color = dict_figure[ev][stage][speed][cooccur]['color']
                         ax = axs[pos[0], pos[1]]
                         circular_plot_angles(angles, color=color, ax=ax, ratio_plot = ratio, with_title = True, with_arrow = True, with_rticks = True)
                         title = f'{ev} - {stage} - {speed} - {cooccur} \n' + ax.get_title()
                         ax.set_title(title, fontsize = 15, y = 1.1)  
+                        
             elif ev == 'sw':
                 for cooccur in ['notcooccur','cooccur']:
 
                     angles = load_grouped_angles(subject = '*' , event = ev, stage = stage,cooccuring = cooccur, speed = speed, chan = chan)
                     
+                    if angles.size == 0:
+                        print(chan ,ev , cooccur)
+                        continue
+                        
                     pos = dict_figure[ev][stage][cooccur]['pos']
 
                     ax = axs[pos[0], pos[1]]
@@ -220,6 +228,10 @@ for chan in channels_events_select:
 
             color = colors[ev][cooccur]
             angles = load_grouped_angles(subject = '*' , event = ev, stage = '*',cooccuring = cooccur, speed = '*', chan = chan)
+            
+            if angles.size == 0:
+                continue
+                
             circular_plot_angles(angles, color=color, ax=ax, ratio_plot = ratio, with_title = True, with_arrow = True, with_rticks = True)
             title = f'{ev} - {cooccur} \n' + ax.get_title()
             ax.set_title(title, fontsize = 15, y = 1.1)  
@@ -244,6 +256,10 @@ for chan in channels_events_select:
                 
                 color = colors[ev][stage]
                 angles = load_grouped_angles(subject = '*' , event = ev, stage = stage,cooccuring = '*', speed = '*', chan = chan)
+                
+                if angles.size == 0:
+                    continue
+                    
                 circular_plot_angles(angles, color=color, ax=ax, ratio_plot = ratio, with_title = True, with_arrow = True, with_rticks = True)
                 title = f'{ev} - {stage} \n' + ax.get_title()
                 ax.set_title(title, fontsize = 15, y = 1.1)  
@@ -269,6 +285,10 @@ for chan in channels_events_select:
                 
                 color = colors[ev][cooccur]
                 angles = load_grouped_angles(subject = subject , event = ev, stage = '*', cooccuring = cooccur, speed = '*', chan = chan)
+                
+                if angles.size == 0:
+                    continue 
+                    
                 circular_plot_angles(angles, color=color, ax=ax, ratio_plot = ratio, with_title = True, with_arrow = True, with_rticks = True)
                 title = f'{ev} - {cooccur} \n' + ax.get_title()
                 ax.set_title(title, fontsize = 15, y = 1.1)  
