@@ -1,8 +1,17 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from params import subjects, timestamps_labels
+from params import *
+import jobtools
+from rsp_detection import resp_tag_job
+from detect_sleep_events import spindles_tag_job, slowwaves_tag_job
+from configuration import *
 
+p = cross_correlogram_params
+stage = p['stage']
+chan = p['chan']
+sp_time_label = p['timestamps_labels']['spindles']
+sw_time_label = p['timestamps_labels']['slowwaves']
 
 # CROSS-CORRELOGRAM SPINDLES VS SLOWWAVES
 def crosscorrelogram(a,b):
@@ -22,88 +31,78 @@ def crosscorrelogram(a,b):
     return c.reshape(-1)
 
 
-chans = ['Fp2','Fp1','Fz','C4','C3','Cz','Pz']
-stages = ['N2','N3']
 
-
-
-
-delta = 1.5
-delta_t_by_bin = 0.05
+# FIG 1 : SPINDLES vs SLOWWAVES
+delta = p['delta_spsw']
+delta_t_by_bin = p['delta_t_by_bin_spsw']
 nbins = int(delta * 2 / delta_t_by_bin)
 
-for subject in subjects:
-    print(subject)
-    spindles = pd.read_excel(f'../event_detection/{subject}_spindles_reref_yasa.xlsx', index_col = 0)
-    slowwaves = pd.read_excel(f'../event_detection/{subject}_slowwaves_reref_yasa.xlsx', index_col = 0)
+nrows = 4
+ncols = 5
+subjects_array = np.array(run_keys).reshape(nrows, ncols)
 
-    chans = [chan for chan in spindles['Channel'].unique() if not chan in ['T4','T3','O1','O2']]
-    stages = ['N2','N3']
+fig, axs = plt.subplots(nrows, ncols, figsize = (20,15), constrained_layout = True)
+fig.suptitle(f'Cross-correlogram of spindles {sp_time_label} - slowwaves {sw_time_label} in {chan}', fontsize = 20, y = 1.04)
 
-    nrows = len(stages)
-    ncols = len(chans)
+for r in range(nrows):
+    for c in range(ncols):
+        ax = axs[r,c]
+        subject = subjects_array[r,c]
 
-    fig, axs = plt.subplots(nrows, ncols, figsize = (20,5), constrained_layout = True)
-    fig.suptitle(f'{subject} : sp - sw', fontsize = 20)
+        spindles = spindles_tag_job.get(subject).to_dataframe()
+        slowwaves = slowwaves_tag_job.get(subject).to_dataframe()
 
-    for c, ch in enumerate(chans):
-        for r, stage in enumerate(stages):
+        sp_times = spindles[(spindles['Channel'] == chan) & (spindles['Stage_Letter'] == stage)][sp_time_label].values
+        sw_times = slowwaves[(slowwaves['Channel'] == chan) & (slowwaves['Stage_Letter'] == stage)][sw_time_label].values
 
-            sp = spindles[(spindles['Channel'] == ch) & (spindles['Stage_Letter'] == stage)]
-            sw = slowwaves[(slowwaves['Channel'] == ch) & (slowwaves['Stage_Letter'] == stage)]
-            cross = crosscorrelogram(sp[timestamps_labels['sp']].values, sw[timestamps_labels['sw']].values)
-            cross_sel = cross[(cross < delta) & (cross > -delta)]
-            N = cross_sel.size
-
-            ax = axs[r,c]
-            ax.set_title(f'{ch} - {stage} - N : {N}')
-            ax.hist(cross_sel, bins = nbins, align = 'mid')
-            ax.set_xlim(-delta,delta)
-    
-    plt.savefig(f'../cross_correlogram/{subject}_cross_correlogram_sp_sw', bbox_inches = 'tight')
-    plt.close()
+        cross = crosscorrelogram(sp_times, sw_times)
+        cross_sel = cross[(cross < delta) & (cross > -delta)]
+        N = cross_sel.size
+        ax.set_title(f'{subject} - N : {N}')
+        ax.hist(cross_sel, bins = nbins, align = 'mid')
+        ax.set_xlim(-delta,delta)
+        
+fig.savefig(base_folder / 'results' / 'cross_correlogram' / 'cross_correlogram_spindles_slowwaves.png', bbox_inches = 'tight')
+plt.close()
     
     
-    
-    
-    
-delta = 4
-delta_t_by_bin = 0.2
+# FIG 2 : EVENTS - RESP
+delta = p['delta_resp']
+delta_t_by_bin = p['delta_t_by_bin_resp']
 nbins = int(delta * 2 / delta_t_by_bin)
 
-peak_labels = {'spindles':timestamps_labels['sp'],'slowwaves':timestamps_labels['sw']}
-resp_transition_label = {'ei':'start_time','ie':'transition_time'}
+resp_transition_dict = {'expi-inspi':'start_time','inspi-expi':'transition_time'}
 
-for subject in subjects:
-    print(subject)
+event_labels = ['spindles','slowwaves']
+for ev in event_labels:
+    for resp_transition_label, resp_transition_time_label in resp_transition_dict.items():
+        fig, axs = plt.subplots(nrows, ncols, figsize = (20,15), constrained_layout = True)
+        event_time_label = p['timestamps_labels'][ev]
+        fig.suptitle(f'Cross-correlogram of {ev} {event_time_label} - resp {resp_transition_label} transition in {chan}', fontsize = 20, y = 1.04)
 
-    resp = pd.read_excel(f'../resp_features/{subject}_resp_features_tagged.xlsx', index_col = 0)
+        for r in range(nrows):
+            for c in range(ncols):
+                ax = axs[r,c]
+                subject = subjects_array[r,c]
 
-    nrows = len(stages)
-    ncols = len(chans)
-    
-    for resp_transition in ['ei','ie']:
-    
-        for ev in ['spindles','slowwaves']:
-            events = pd.read_excel(f'../event_detection/{subject}_{ev}_reref_yasa.xlsx', index_col = 0)
+                resp = resp_tag_job.get(subject).to_dataframe()
+                
+                if ev == 'spindles':
+                    events = spindles_tag_job.get(subject).to_dataframe()
+                elif ev == 'slowwaves':
+                    events = slowwaves_tag_job.get(subject).to_dataframe()
 
-            fig, axs = plt.subplots(nrows, ncols, figsize = (20,5), constrained_layout = True)
-            fig.suptitle(f'{subject} - {ev} - {peak_labels[ev]} vs resp {resp_transition}', fontsize = 20)
 
-            for c, ch in enumerate(chans):
-                for r, stage in enumerate(stages):
+                ev_sel = events[(events['Channel'] == chan)]
+                resp_stage = resp[resp['sleep_stage'] == stage]
 
-                    ev_sel = events[(events['Channel'] == ch) & (events['Stage_Letter'] == stage)]
-                    resp_stage = resp[resp['sleep_stage'] == stage]
+                cross = crosscorrelogram(ev_sel[p['timestamps_labels'][ev]].values, resp_stage[resp_transition_time_label].values)
+                cross_sel = cross[(cross < delta) & (cross > -delta)]
+                N = cross_sel.size
 
-                    cross = crosscorrelogram(ev_sel[peak_labels[ev]].values, resp_stage[resp_transition_label[resp_transition]].values)
-                    cross_sel = cross[(cross < delta) & (cross > -delta)]
-                    N = cross_sel.size
-
-                    ax = axs[r,c]
-                    ax.set_title(f'{ch} - {stage} - N : {N}')
-                    ax.hist(cross_sel, bins = nbins, align = 'mid')
-                    ax.set_xlim(-delta,delta)
+                ax.set_title(f'{subject} - N : {N}')
+                ax.hist(cross_sel, bins = nbins, align = 'mid')
+                ax.set_xlim(-delta,delta)
             
-            plt.savefig(f'../cross_correlogram/{subject}_cross_correlogram_{resp_transition}_{ev}', bbox_inches = 'tight')
-            plt.close()
+        fig.savefig(base_folder / 'results' / 'cross_correlogram' / f'cross_correlogram_{ev}_{resp_transition_label}', bbox_inches = 'tight')
+        plt.close()

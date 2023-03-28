@@ -1,16 +1,26 @@
 import numpy as np
 import pandas as pd
-import json
 import pingouin as pg
 import matplotlib.pyplot as plt
-import glob
-from params import subjects, dpis, stages_events_select, channels_events_select
+from fnmatch import filter
+import xarray as xr
+from params import *
+from configuration import *
+import jobtools
+from events_coupling import event_coupling_job
+from rsp_detection import resp_tag_job
+
 
 
 """
 This script generate 4 types of figs:
 
 """
+
+p = events_coupling_figs_params
+stage = p['stage']
+save_folder = base_folder / 'results' / 'events_coupling_figures'
+subjects = run_keys
 
 #####
 
@@ -58,7 +68,15 @@ def pval_stars(p):
         stars = np.nan
     return stars
 
-def load_grouped_angles(subject, event, stage, cooccuring, speed, chan):
+def get_angles(ds, pattern):
+    coords = list(ds.coords)
+    filtered_coords = filter(coords, pattern)
+    angles = []
+    for coord in filtered_coords:
+        angles.extend(list(ds[coord].values))
+    return angles
+
+def load_grouped_angles(subject, event, cooccuring, speed, chan):
     
     """
     High level function that load angles according to arguments and concatenate them if '*' argument
@@ -66,19 +84,24 @@ def load_grouped_angles(subject, event, stage, cooccuring, speed, chan):
     Parameters (str)
     ----------
     subject : From 'S1' to 'S20', '*' to concatenate all
-    event : 'sp' or 'sw' for spindles or slow-wave 
-    stage : 'N2 or 'N3', '*' to concatenate both
+    event : 'spindles' or 'slowwaves' for spindles or slow-wave 
     cooccuring : 'cooccur' or 'notcoocur', '*' to concatenate both
     speed : 'SS' or 'FS' for slow or fast spindles, '*' to concatenate both (useful only for spindles)
     chan : 'Fz' for example
     """
     
-    if event == 'sp':
-        files = glob.glob(f'../events_coupling/{subject}_sp_{stage}_{cooccuring}_{speed}_phase_angles_{chan}*')
-    elif event == 'sw':
-        files = glob.glob(f'../events_coupling/{subject}_sw_{stage}_{cooccuring}_phase_angles_{chan}*')
+    if subject == '*':
+        concat = [event_coupling_job.get(run_key) for run_key in run_keys]
+        ds_search = xr.concat(concat, dim = 'subject')
+    else:
+        ds_search = event_coupling_job.get(subject)
+
+    if event == 'spindles':
+        pattern = f'{subject}_spindles_{cooccuring}_{speed}_{chan}'
+    elif event == 'slowwaves':
+        pattern = f'{subject}_slowwaves_{cooccuring}_{chan}'
     
-    return np.concatenate([np.load(f) for f in files])
+    return np.array(get_angles(ds_search, pattern))
 
 def circular_plot_angles(angles, color = None, ax=None, ratio_plot = 0.42, bins = 18, with_rticks = True, with_title = False, with_arrow = True):
     if ax is None:
@@ -117,6 +140,20 @@ def circular_plot_angles(angles, color = None, ax=None, ratio_plot = 0.42, bins 
         ax.arrow(np.deg2rad(mu), 0, 0, r, alpha = 1, width = 0.3, label = 'r', color=color_arrow, length_includes_head=True, head_width = 0.4, head_length =  0.01)
     return ax
 
+def get_cycles_ratios(run_keys):
+    concat = []
+    for run_key in run_keys:
+        to_concat = resp_tag_job.get(run_key).to_dataframe()
+        to_concat['subject'] = run_key
+        concat.append(to_concat)
+    pooled_features = pd.concat(concat)
+
+    cycle_ratio_by_sub_by_stage = pooled_features.groupby(['subject','sleep_stage'])['cycle_ratio'].mean(numeric_only = True).reset_index()
+    mean_cycle_ratio_by_stage = pooled_features.groupby('sleep_stage')['cycle_ratio'].mean(numeric_only = True).reset_index()
+    mean_cycle_ratio_by_stage.insert(0, 'subject','mean')
+    cycles_ratios = pd.concat([cycle_ratio_by_sub_by_stage, mean_cycle_ratio_by_stage])
+    return cycles_ratios
+
 def get_respi_ratio(subject , stage, ratio_df):
     if subject == '*':
         subject_ratio = 'mean'
@@ -131,167 +168,96 @@ def get_respi_ratio(subject , stage, ratio_df):
 
 ##### 
 
-event_types = ['sp','sw'] # run keys for spindles and slow waves
-event_types_titles = {'sp':'Spindles','sw':'Slow-Waves'} # understandable labels for spindles and slowwaves
+event_types = ['spindles','slowwaves'] # run keys for spindles and slow waves
+event_types_titles = {'spindles':'Spindles','slowwaves':'Slow-Waves'} # understandable labels for spindles and slowwaves
 bins = 18 # histograms of distribution of events according to resp phase will be distributed in this number of bins
 
-cycles_ratios = pd.read_excel('../resp_stats/cycle_ratios.xlsx', index_col = 0) # get cycles ratio for the phase transition in polar plots
+cycles_ratios = get_cycles_ratios(run_keys) # get cycles ratio for the phase transition in polar plots
 
-dict_figure = {'sp':
-               {'N2':
-                {'SS':
-                 {'cooccur':{'pos':(0,0), 'color':None},
-                  'notcooccur':{'pos':(0,1), 'color':None}},
-                 'FS':
-                 {'cooccur':{'pos':(0,2), 'color':None},
-                  'notcooccur':{'pos':(0,3), 'color':None}}},
-                'N3':{
-                    'SS':{
-                        'cooccur':{'pos':(1,0), 'color':'skyblue'},
-                        'notcooccur':{'pos':(1,1), 'color':'skyblue'}},
-                    'FS':{
-                        'cooccur':{'pos':(1,2), 'color':'skyblue'},
-                        'notcooccur':{'pos':(1,3), 'color':'skyblue'}}},
-                      },
-                 'sw':{
-                     'N2':{
-                         'cooccur':{'pos':(2,0), 'color':'forestgreen'},
-                         'notcooccur':{'pos':(2,1), 'color':'forestgreen'}},
-                     'N3':{'cooccur':{'pos':(2,2), 'color':'limegreen'},
-                           'notcooccur':{'pos':(2,3), 'color':'limegreen'}}}
-                }
+dict_figure = {
+    'spindles':{'SS':{'pos':0, 'color':None},'FS':{'pos':1, 'color':'skyblue'}},
+    'slowwaves':{'pos':2, 'color':'forestgreen'},
+}
 
+# POOLED
+print('FIG POOLED')
 
-# GLOBAL DETAILED
-print('FIG GLOBAL DETAILED')
-
-nrows = 3
-ncols = 4
+ncols = 3
 
 for chan in channels_events_select:
-    fig, axs = plt.subplots(nrows, ncols, figsize = (20,10), constrained_layout = True, subplot_kw=dict(projection = 'polar'))
+    fig, axs = plt.subplots(ncols, figsize = (15,7), constrained_layout = True, subplot_kw=dict(projection = 'polar'))
 
-    for ev in ['sp','sw']:
+    for ev in ['spindles','slowwaves']:
         ev_title = event_types_titles[ev]
-        for stage in ['N2','N3']:
             
-            ratio = get_respi_ratio(subject = '*', stage = stage, ratio_df = cycles_ratios)
+        ratio = get_respi_ratio(subject = '*', stage = stage, ratio_df = cycles_ratios)
 
-            if ev == 'sp':
-                for speed in ['SS','FS']:
-                    for cooccur in ['notcooccur','cooccur']:
-                        angles = load_grouped_angles(subject = '*' , event = ev, stage = stage,cooccuring = cooccur, speed = speed, chan = chan)
-                        
-                        if angles.size == 0:
-                            print(chan ,ev , cooccur)
-                            continue
-                        pos = dict_figure[ev][stage][speed][cooccur]['pos']
-                        color = dict_figure[ev][stage][speed][cooccur]['color']
-                        ax = axs[pos[0], pos[1]]
-                        circular_plot_angles(angles, color=color, ax=ax, ratio_plot = ratio, with_title = True, with_arrow = True, with_rticks = True)
-                        title = f'{ev} - {stage} - {speed} - {cooccur} \n' + ax.get_title()
-                        ax.set_title(title, fontsize = 15, y = 1.1)  
-                        
-            elif ev == 'sw':
-                for cooccur in ['notcooccur','cooccur']:
+        if ev == 'spindles':
+            for speed in ['SS','FS']:
+                angles = load_grouped_angles(subject = '*' , event = ev, cooccuring = '*', speed = speed, chan = chan)
+                
+                if angles.size == 0:
+                    continue
 
-                    angles = load_grouped_angles(subject = '*' , event = ev, stage = stage,cooccuring = cooccur, speed = speed, chan = chan)
+                pos = dict_figure[ev][speed]['pos']
+                color = dict_figure[ev][speed]['color']
+                ax = axs[pos]
+                circular_plot_angles(angles, color=color, ax=ax, ratio_plot = ratio, with_title = True, with_arrow = True, with_rticks = True)
+                title = f'{ev} - {speed} \n' + ax.get_title()
+                ax.set_title(title, fontsize = 15, y = 1.1)  
                     
-                    if angles.size == 0:
-                        print(chan ,ev , cooccur)
-                        continue
-                        
-                    pos = dict_figure[ev][stage][cooccur]['pos']
+        elif ev == 'slowwaves':
 
-                    ax = axs[pos[0], pos[1]]
-                    color = dict_figure[ev][stage][cooccur]['color']
-                    circular_plot_angles(angles, color=color, ax=ax, ratio_plot = ratio, with_title = True, with_arrow = True, with_rticks = True)
-                    title = f'{ev} - {stage} - {cooccur} \n' + ax.get_title()
-                    ax.set_title(title, fontsize = 15, y = 1.1)
-
-    plt.savefig(f'../events_coupling_stats/global/detailed/polar_plot_{chan}', bbox_inches = 'tight')
-    plt.close()
-    
-    
-    
-# GLOBAL MERGE STAGE & SPEED
-print('FIG GLOBAL MERGE STAGE & SPEED')
-colors = {'sp':{'notcooccur':None, 'cooccur':'skyblue'} , 'sw':{'notcooccur':'forestgreen', 'cooccur':'limegreen'}}
-ratio = get_respi_ratio(subject = '*', stage = '*', ratio_df = cycles_ratios)
-
-for chan in channels_events_select:
-    fig, axs = plt.subplots(2, 2, figsize = (20,10), constrained_layout = True, subplot_kw=dict(projection = 'polar'))
-
-    for r, ev in enumerate(['sp','sw']):
-        for c, cooccur in enumerate(['notcooccur','cooccur']):
-            ax = axs[r,c]
-
-            color = colors[ev][cooccur]
-            angles = load_grouped_angles(subject = '*' , event = ev, stage = '*',cooccuring = cooccur, speed = '*', chan = chan)
+            angles = load_grouped_angles(subject = '*' , event = ev,cooccuring = '*', speed = speed, chan = chan)
             
             if angles.size == 0:
                 continue
                 
+            pos = dict_figure[ev]['pos']
+
+            ax = axs[pos]
+            color = dict_figure[ev]['color']
             circular_plot_angles(angles, color=color, ax=ax, ratio_plot = ratio, with_title = True, with_arrow = True, with_rticks = True)
-            title = f'{ev} - {cooccur} \n' + ax.get_title()
-            ax.set_title(title, fontsize = 15, y = 1.1)  
+            title = f'{ev} \n' + ax.get_title()
+            ax.set_title(title, fontsize = 15, y = 1.1)
 
-    plt.savefig(f'../events_coupling_stats/global/merge_stage_speed/polar_plot_{chan}', bbox_inches = 'tight')
+    fig.savefig(save_folder / 'global' / f'polar_plot_pooled_{chan}.png', bbox_inches = 'tight')
     plt.close()
     
+  
     
-    
-# GLOBAL MERGE COOCCURING & SPEED
-print('FIG GLOBAL MERGE OCCURING & SPEED')
-colors = {'sp':{'N2':None, 'N3':'skyblue'} , 'sw':{'N2':'forestgreen', 'N3':'limegreen'}}
-for chan in channels_events_select:
-    fig, axs = plt.subplots(2, 2, figsize = (20,10), constrained_layout = True, subplot_kw=dict(projection = 'polar'))
-
-    for r, ev in enumerate(['sp','sw']):
-            for c, stage in enumerate(['N2','N3']):
-                
-                ratio = get_respi_ratio(subject = '*', stage = stage, ratio_df = cycles_ratios)
-                
-                ax = axs[r,c]
-                
-                color = colors[ev][stage]
-                angles = load_grouped_angles(subject = '*' , event = ev, stage = stage,cooccuring = '*', speed = '*', chan = chan)
-                
-                if angles.size == 0:
-                    continue
-                    
-                circular_plot_angles(angles, color=color, ax=ax, ratio_plot = ratio, with_title = True, with_arrow = True, with_rticks = True)
-                title = f'{ev} - {stage} \n' + ax.get_title()
-                ax.set_title(title, fontsize = 15, y = 1.1)  
-
-    plt.savefig(f'../events_coupling_stats/global/merge_occuring_speed/polar_plot_{chan}', bbox_inches = 'tight')
-    plt.close()
-    
-    
-# SUBJECT MERGE
+# SUBJECT
 print('FIG by SUBJECT')
-colors = {'sp':{'notcooccur':None, 'cooccur':'skyblue'} , 'sw':{'notcooccur':'forestgreen', 'cooccur':'limegreen'}}
+colors = {'spindles':None , 'slowwaves':'forestgreen'}
 for chan in channels_events_select:
-    for subject in subjects:
-        
-        fig, axs = plt.subplots(2, 2, figsize = (20,10), constrained_layout = True, subplot_kw=dict(projection = 'polar'))
-        
-        ratio = get_respi_ratio(subject = subject, stage = '*', ratio_df = cycles_ratios)
+    for event_type in ['spindles','slowwaves']:
 
-        for r, ev in enumerate(['sp','sw']):
-            for c, cooccur in enumerate(['notcooccur','cooccur']):
+        color = colors[event_type]
 
+        nrows = 4
+        ncols = 5
+
+        subjects_array = np.array(run_keys).reshape(nrows, ncols)
+        fig, axs = plt.subplots(nrows, ncols, figsize = (20,20), constrained_layout = True, subplot_kw=dict(projection = 'polar'))
+        fig.suptitle(f'{event_type} polar distributions along respiration phase')
+        
+        for r in range(nrows):
+            for c in range(ncols):
                 ax = axs[r,c]
-                
-                color = colors[ev][cooccur]
-                angles = load_grouped_angles(subject = subject , event = ev, stage = '*', cooccuring = cooccur, speed = '*', chan = chan)
+                subject = subjects_array[r,c]
+
+                ratio = get_respi_ratio(subject = subject, stage = stage, ratio_df = cycles_ratios)
+
+                angles = load_grouped_angles(subject = subject , event = ev, cooccuring = '*', speed = '*', chan = chan)
                 
                 if angles.size == 0:
                     continue 
                     
-                circular_plot_angles(angles, color=color, ax=ax, ratio_plot = ratio, with_title = True, with_arrow = True, with_rticks = True)
-                title = f'{ev} - {cooccur} \n' + ax.get_title()
-                ax.set_title(title, fontsize = 15, y = 1.1)  
+                circular_plot_angles(angles, color=color, ax=ax, ratio_plot = ratio, with_title = False, with_arrow = True, with_rticks = True)
+                title = subject
+                ax.set_title(title)  
 
-        plt.savefig(f'../events_coupling_stats/subjects/{chan}/polar_plot_{subject}_{chan}', bbox_inches = 'tight')
+        fig.savefig(save_folder / 'subjects' / f'polar_plot_{chan}_{event_type}.png', bbox_inches = 'tight')
         plt.close()
+        
+print('SUCCESS')

@@ -24,6 +24,10 @@ from ephyviewer import MainViewer, TraceViewer, TimeFreqViewer, EpochViewer, Eve
 
 from myqt import QT, DebugDecorator
 
+from preproc_staging import preproc_job, hypnogram_job
+from rsp_detection import resp_features_job
+from detect_sleep_events import spindles_detect_job, slowwaves_detect_job
+
 
 ### PARAMS
 mono_chans = ['Fz','Fp1','Fp2','C4','C3','Cz','Pz']
@@ -36,16 +40,15 @@ mono_chans = ['Fz','Fp1','Fp2','C4','C3','Cz','Pz']
 def get_viewer_from_run_key(run_key, parent=None, with_video=False):
     settings_name = None
     
-    prepros_reref = xr.open_dataarray(base_folder / 'preproc' / f'{run_key}_reref.nc')
-    resp_features = pd.read_excel(base_folder / 'resp_features' / f'{run_key}_resp_features.xlsx')
-    hypnos = pd.read_excel(base_folder / 'hypnos'/  f'hypno_{run_key}_yasa.xlsx')
+    prepros_reref = preproc_job.get(run_key)['preproc']
+    resp_features = resp_features_job.get(run_key).to_dataframe()
+    hypnos = hypnogram_job.get(run_key).to_dataframe()
     hypnos['time'] = hypnos.index * 30.
     hypnos['duration'] = 30.
     
     
-    spindles = pd.read_excel(base_folder / 'event_detection' / f'{run_key}_spindles_reref_yasa.xlsx')
-    slowwaves = pd.read_excel(base_folder / 'event_detection' / f'{run_key}_slowwaves_reref_yasa.xlsx')
-    
+    spindles = spindles_detect_job.get(run_key).to_dataframe()
+    slowwaves = slowwaves_detect_job.get(run_key).to_dataframe()
     
     
     datetime0 = None
@@ -91,14 +94,14 @@ def get_viewer_from_run_key(run_key, parent=None, with_video=False):
     i = 0
 
     # SLOWWAVES
-    for chan_name in mono_chans:
-        mask = slowwaves['Channel'] == chan_name
-        df = slowwaves[mask]
-        chan = list(channel_names).index(chan_name)
-        scatter_indexes[i] = (df['Start'] * srate).astype('int64')
-        scatter_channels[i] = [chan]
-        scatter_colors[i] = '00F404'
-        i += 1
+    # for chan_name in mono_chans:
+    #     mask = slowwaves['Channel'] == chan_name
+    #     df = slowwaves[mask]
+    #     chan = list(channel_names).index(chan_name)
+    #     scatter_indexes[i] = (df['Start'] * srate).astype('int64')
+    #     scatter_channels[i] = [chan]
+    #     scatter_colors[i] = '00F404'
+    #     i += 1
 
     for chan_name in mono_chans:
         mask = slowwaves['Channel'] == chan_name
@@ -109,14 +112,14 @@ def get_viewer_from_run_key(run_key, parent=None, with_video=False):
         scatter_colors[i] = 'f3ff33'
         i += 1
 
-    for chan_name in mono_chans:
-        mask = slowwaves['Channel'] == chan_name
-        df = slowwaves[mask]
-        chan = list(channel_names).index(chan_name)
-        scatter_indexes[i] = (df['End'] * srate).astype('int64')
-        scatter_channels[i] = [chan]
-        scatter_colors[i] = '000BED'
-        i += 1
+    # for chan_name in mono_chans:
+    #     mask = slowwaves['Channel'] == chan_name
+    #     df = slowwaves[mask]
+    #     chan = list(channel_names).index(chan_name)
+    #     scatter_indexes[i] = (df['End'] * srate).astype('int64')
+    #     scatter_channels[i] = [chan]
+    #     scatter_colors[i] = '000BED'
+    #     i += 1
 
     # SPINDLES
     for chan_name in mono_chans:
@@ -197,7 +200,7 @@ def get_viewer_from_run_key(run_key, parent=None, with_video=False):
 
 def test_get_viewer():
     
-    run_key = 'S1'
+    run_key = 'S5'
 
     app = ev.mkQApp()
     win = get_viewer_from_run_key(run_key)

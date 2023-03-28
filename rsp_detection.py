@@ -3,14 +3,14 @@ import xarray as xr
 import matplotlib.pyplot as plt
 import pandas as pd
 from scipy import signal
-from params import srate, respi_chan, filter_resp, resp_shifting, clean_resp_features, subjects
-from mne.filter import filter_data
+from params import *
+from configuration import *
+import jobtools
+from preproc_staging import preproc_job, upsample_hypno_job
+from detect_sleep_events import spindles_detect_job, slowwaves_detect_job
 
-"""
-This script allows detection of respiratory cycles and compute features for each cycle, for all subjects
-"""
 
-def iirfilt(sig, srate, lowcut=None, highcut=None, order = 4, ftype = 'butter', verbose = False, show = False): # IIR-FILTER
+def iirfilt(sig, srate, lowcut=None, highcut=None, order = 4, ftype = 'butter'): # IIR-FILTER
 
     if lowcut is None and not highcut is None:
         btype = 'lowpass'
@@ -33,20 +33,6 @@ def iirfilt(sig, srate, lowcut=None, highcut=None, order = 4, ftype = 'butter', 
     filter_mode = 'sos'
     sos = signal.iirfilter(order, Wn, analog=False, btype=btype, ftype=ftype, output=filter_mode)
     filtered_sig = signal.sosfiltfilt(sos, sig, axis=0)
-
-    if verbose:
-        print(f'{ftype} iirfilter of {order}th-order')
-        print(f'btype : {btype}')
-
-
-    if show:
-        w, h = signal.sosfreqz(sos,fs=srate)
-        fig, ax = plt.subplots()
-        ax.plot(w, np.abs(h))
-        ax.set_title('Frequency response')
-        ax.set_xlabel('Frequency [Hz]')
-        ax.set_ylabel('Amplitude')
-        plt.show()
 
     return filtered_sig
 
@@ -106,29 +92,25 @@ def get_dispersion(vector, n_sd=2, n_q=0.05):
     quantile_sup = np.quantile(vector, 1 - n_q)
     return {'sd_inf':sd_inf, 'sd_sup':sd_sup, 'quantile_inf':quantile_inf, 'quantile_sup':quantile_sup}
 
-save = True
 
-for subject in subjects:
-    print(subject)
-
-    resp_signal = xr.open_dataarray(f'../preproc/{subject}_reref.nc').sel(chan = respi_chan).data
+# JOB RESP FEATURES
+def compute_resp(run_key, **p):
+    data = preproc_job.get(run_key)['preproc']
+    srate = data.attrs['srate']
+    resp_signal = data.sel(chan = p['respi_chan']).values
     resp_zscored = robust_zscore(resp_signal) # signal is centered and reduced to set on the same scale for the subjects
-    resp_filtered = iirfilt(sig=resp_zscored, srate=srate, lowcut=filter_resp['lowcut'], highcut=filter_resp['highcut'], order=filter_resp['order'], ftype = filter_resp['ftype']) # filtering signal
-    resp_shifted = resp_filtered + resp_shifting # Shift respi baseline a little bit to detect zero-crossings above baseline noise
+    resp_filtered = iirfilt(sig=resp_zscored, srate=srate, lowcut=p['lowcut'], highcut=p['highcut'], order=p['order'], ftype = p['ftype']) # filtering signal
+    resp_shifted = resp_filtered + p['resp_shifting'] # Shift respi baseline a little bit to detect zero-crossings above baseline noise
     resp_features = get_resp_features(resp_shifted, srate) # compute resp features 
-    mask_duration = (resp_features['cycle_duration'] > clean_resp_features['cycle_duration']['min']) & (resp_features['cycle_duration'] < clean_resp_features['cycle_duration']['max']) # keep cycles according to their duration
-    mask_cycle_ratio = resp_features['cycle_ratio'] < clean_resp_features['cycle_ratio'] # inspi / expi duration time ratio has to be lower than set value
-    mask_second_volume = resp_features['second_volume'] > clean_resp_features['second_volume'] # zscored air volume mobilized by second by resp cycle has to be higher than set value
+    mask_duration = (resp_features['cycle_duration'] > p['cycle_duration_vlims']['min']) & (resp_features['cycle_duration'] < p['cycle_duration_vlims']['max']) # keep cycles according to their duration
+    mask_cycle_ratio = resp_features['cycle_ratio'] < p['max_cycle_ratio'] # inspi / expi duration time ratio has to be lower than set value
+    mask_second_volume = resp_features['second_volume'] > p['min_second_volume'] # zscored air volume mobilized by second by resp cycle has to be higher than set value
     keep = mask_duration & mask_cycle_ratio & mask_second_volume
     resp_features_clean = resp_features[keep] # apply masking
-    if save:
-        resp_features_clean.reset_index(drop=True).to_excel(f'../resp_features/{subject}_resp_features.xlsx')
-
+    resp_features_clean = resp_features_clean.reset_index(drop=True)
 
     N_before_cleaning = resp_features.shape[0]
     N_after_cleaning = resp_features_clean.shape[0]
-    N_removed_by_cleaning = N_before_cleaning - N_after_cleaning
-    print('N cycles removed :', N_removed_by_cleaning)
 
     ### PLOT DISTRIBUTIONS OF RESPIRATION METRICS BEFORE CLEANING
     metrics = np.array(['cycle_duration','inspi_duration','expi_duration','cycle_freq','cycle_ratio','inspi_amplitude','expi_amplitude','cycle_amplitude','inspi_volume','expi_volume','cycle_volume','second_volume']).reshape(4,3)
@@ -136,7 +118,7 @@ for subject in subjects:
     ncols = metrics.shape[1]
 
     fig, axs = plt.subplots(nrows = nrows, ncols = ncols , figsize = (20,10), constrained_layout = True)
-    fig.suptitle(f'{subject} - N : {N_before_cleaning} cycles')
+    fig.suptitle(f'{run_key} - N : {N_before_cleaning} cycles')
     for r in range(nrows):
         for c in range(ncols):
             ax = axs[r, c]
@@ -154,16 +136,14 @@ for subject in subjects:
                     color = 'g'
                 ax.axvline(x = dispersion[estimator], linestyle = '--', linewidth = 0.4, color = color, label = estimator)
             if metric == 'second_volume':
-                ax.axvline(x = clean_resp_features['second_volume'], color = 'r', label = 'remove threshold')
+                ax.axvline(x = p['min_second_volume'], color = 'r', label = 'remove threshold')
             ax.legend()
-    if save:
-        plt.savefig(f'../view_respi_detection/{subject}_resp_detection_distribution', bbox_inches = 'tight')
-    plt.show()
+        fig.savefig(base_folder / 'results' / 'view_respi_detection' / f'{run_key}_resp_detection_distribution', bbox_inches = 'tight')
     plt.close()
 
     ### PLOT DISTRIBUTIONS OF RESPIRATION METRICS AFTER CLEANING
     fig, axs = plt.subplots(nrows = nrows, ncols = ncols , figsize = (20,10), constrained_layout = True)
-    fig.suptitle(f'{subject} - N : {N_after_cleaning} cycles')
+    fig.suptitle(f'{run_key} - N : {N_after_cleaning} cycles')
     for r in range(nrows):
         for c in range(ncols):
             ax = axs[r, c]
@@ -174,9 +154,7 @@ for subject in subjects:
             ax.set_xlabel(metric)
             ax.set_ylabel('N')
 
-    if save:
-        plt.savefig(f'../view_respi_detection/{subject}_resp_detection_distribution_clean', bbox_inches = 'tight')
-    plt.show()
+    fig.savefig(base_folder / 'results' / 'view_respi_detection' / f'{run_key}_resp_detection_distribution_clean', bbox_inches = 'tight')
     plt.close()
 
     ### PLOT DETECTED CYCLES ON THE RAW SIGNAL
@@ -189,10 +167,76 @@ for subject in subjects:
     for marker in markers.keys():
         ax.plot(resp_features_clean[marker], resp_zscored[resp_features_clean[marker]], 'o', color = markers[marker], label = f'{marker}')
     ax.legend()
-    ax.set_title(subject)
+    ax.set_title(run_key)
 
-    if save:
-        plt.savefig(f'../view_respi_detection/{subject}_resp_detection')
+    fig.savefig(base_folder / 'results' / 'view_respi_detection' / f'{run_key}_resp_detection')
 
-    plt.show()
     plt.close()
+
+    return xr.Dataset(resp_features_clean)
+
+resp_features_job = jobtools.Job(precomputedir, 'resp_features', resp_params, compute_resp)
+jobtools.register_job(resp_features_job)
+
+def test_compute_resp():
+    run_key = 'S1'
+    resp_features = compute_resp(run_key, **resp_params).to_dataframe()
+    print(resp_features)
+
+
+# JOB TAGGING RESP WITH SLEEP
+def resp_tag(run_key, **p):
+
+    hypno_upsampled = upsample_hypno_job.get(run_key).to_dataframe() # load upsampled hypnogram of the subject
+    rsp_features = resp_features_job.get(run_key).to_dataframe() # load resp features
+
+    idx_start = rsp_features['start'].values # select start indexes of the cycles
+    stage_of_the_start_idxs = hypno_upsampled['str'][idx_start] # keep stages (strings) corresponding to start resp cycle indexes
+    rsp_features_staged = rsp_features.copy()
+    rsp_features_staged['sleep_stage'] = stage_of_the_start_idxs.values # append sleep stage column to resp features
+    
+    event_in_resp = {'spindles':[],'slowwaves':[]} # list to encode if an event is present is in the resp cycle or not
+
+    events_load = {'spindles':spindles_detect_job.get(run_key).to_dataframe(), 'slowwaves':slowwaves_detect_job.get(run_key).to_dataframe()} # load dataframe of detected events
+
+    for event_label in ['spindles','slowwaves']: # loop on both types of events (slow waves and spindles)
+        events = events_load[event_label] 
+        event_times = events[p['timestamps_labels'][event_label]].values # get np array of events timings that summarize the whole events (set in params)
+        
+        for c, row in rsp_features_staged.iterrows(): # loop on rsp cycles
+            start = row['start_time'] # get start time of the cycle
+            stop = row['stop_time'] # get stop time of the cycle
+            
+            events_of_the_cycle = event_times[(event_times >= start) & (event_times < stop)] # keep event times present in the cycle
+            
+            if events_of_the_cycle.size != 0: # if at least one event is present in the cycle...
+                event_in_resp[event_label].append(1) # ... append a 1
+            else:
+                event_in_resp[event_label].append(0)  # ... else append a 0
+            
+    rsp_features_tagged = rsp_features_staged.copy()
+    rsp_features_tagged['Spindle_Tag'] = event_in_resp['spindles'] # append spindle tagging column to resp features
+    rsp_features_tagged['SlowWave_Tag'] = event_in_resp['slowwaves'] # append slowwave tagging column to resp features
+    
+    return xr.Dataset(rsp_features_tagged)
+
+resp_tag_job = jobtools.Job(precomputedir, 'resp_tag', resp_tag_params, resp_tag)
+jobtools.register_job(resp_tag_job)
+
+def test_resp_tag():
+    run_key = 'S1'
+    resp_tags = resp_tag(run_key, **resp_tag_params).to_dataframe()
+    print(resp_tags)
+
+
+def compute_all():
+    # jobtools.compute_job_list(resp_features_job, run_keys, force_recompute=False, engine='loop')
+    jobtools.compute_job_list(resp_tag_job, run_keys, force_recompute=False, engine='loop')
+
+
+if __name__ == '__main__':
+    # test_compute_resp()
+    # test_resp_tag()
+    
+
+    compute_all()
