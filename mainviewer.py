@@ -2,8 +2,6 @@
 
 import netCDF4
 
-from params import subjects, srate
-
 from configuration import base_folder
 
 import xarray as xr
@@ -41,6 +39,7 @@ def get_viewer_from_run_key(run_key, parent=None, with_video=False):
     settings_name = None
     
     prepros_reref = preproc_job.get(run_key)['preproc']
+    srate = prepros_reref.attrs['srate']
     resp_features = resp_features_job.get(run_key).to_dataframe()
     hypnos = hypnogram_job.get(run_key).to_dataframe()
     hypnos['time'] = hypnos.index * 30.

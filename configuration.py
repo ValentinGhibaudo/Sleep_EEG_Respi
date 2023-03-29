@@ -21,4 +21,5 @@ elif sys.platform.startswith('win'):
 
 
 base_folder = Path(base_folder)
+article_folder = base_folder / 'autres' / 'article_N20'
 precomputedir = base_folder / 'precompute'
