@@ -3,9 +3,9 @@ import xarray as xr
 import pandas as pd
 from params import *
 from configuration import *
-import jobtools
 from detect_sleep_events import spindles_tag_job, slowwaves_tag_job
 from rsp_detection import resp_tag_job
+import jobtools
 
 
 ###### USEFUL FUNCTIONS

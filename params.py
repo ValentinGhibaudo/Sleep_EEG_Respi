@@ -150,9 +150,17 @@ events_coupling_params = {
     'timestamps_labels':timestamps_labels # timestamp label of the event that will be considered for tagging of respi cycles
 }
 
+events_coupling_stats_params = {
+    'events_coupling_params':events_coupling_params,
+    'stage':compute_stage,
+    'chan':compute_chan,
+    'save_article':True # will save outputs in article folder if True
+}
+
 events_coupling_figs_params = {
     'events_coupling_params':events_coupling_params,
-    'stage':compute_stage
+    'stage':compute_stage,
+    'save_article':True # will save outputs in article folder if True
 }
 
 cross_correlogram_params = {
@@ -189,9 +197,9 @@ sigma_coupling_params = {
 
 sigma_coupling_figs_params = {
     'sigma_coupling_params':sigma_coupling_params,
-    'dpis': 100, # dots per inch = resolution of figs
     'sigma_coupling_chan' :compute_chan, # global sigma coupling fig with just one matrix by patient will average phase-freq from these chans
-    'fig_global_cycle_type' : 'spindled' # global sigma coupling fig with just one matrix by patient will select this type of tagging of resp cycles (choices = ['all','spindled','unspindled','N2','N3','diff'])
+    'fig_global_cycle_type' : 'spindled', # global sigma coupling fig with just one matrix by patient will select this type of tagging of resp cycles (choices = ['all','spindled','unspindled','N2','diff'])
+    'save_article':True # will save outputs in article folder if True
 }
 
 sigma_coupling_stats_params = {

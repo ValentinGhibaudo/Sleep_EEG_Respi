@@ -59,6 +59,7 @@ Pipeline:
 - rsp_stats.py
 - correlation_resp_events.py
 - cross_correlogram.py
+- events_coupling_stats.py
 - events_coupling_figs.py
 - sigma_coupling_stats.py 
 - sigma_coupling_figures.py

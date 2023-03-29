@@ -1,20 +1,14 @@
 import numpy as np
-import pandas as pd
-import json
 import xarray as xr
-from params import subjects, timestamps_labels, channels_events_select, stages_events_select
+import pandas as pd
+from params import *
+from configuration import *
+from detect_sleep_events import spindles_tag_job, slowwaves_tag_job
+from rsp_detection import resp_tag_job
+import jobtools
+
 
 ###### USEFUL FUNCTIONS
-
-def load_resp_features(subject):
-    rsp = pd.read_excel(f'../resp_features/{subject}_resp_features_tagged.xlsx', index_col = 0)
-    return rsp
-
-def load_events(subject, event_type): # load events 
-    if event_type == 'sp':
-        return pd.read_excel(f'../event_detection/{subject}_spindles_cooccuring.xlsx', index_col = 0)
-    elif event_type == 'sw':
-        return pd.read_excel(f'../event_detection/{subject}_slowwaves_cooccuring.xlsx', index_col = 0)
 
 def get_phase_angles(rsp_features, event_times):
     list_of_angles = [] # phase angles of events found in each cycle are stored in a list
@@ -31,92 +25,84 @@ def get_phase_angles(rsp_features, event_times):
     return np.array(list_of_angles)
 
 
-##### COMPUTING
+# JOB SPINDLES DETECTION
 
-rsp_features_concat = []
-for subject in subjects:
-    rsp_features_subject = load_resp_features(subject)
-    rsp_features_subject.insert(0 , 'subject' , subject)
-    rsp_features_concat.append(rsp_features_subject)
-    
-rsp_features_all = pd.concat(rsp_features_concat)
-    
-for chan in channels_events_select:
-    print(chan)
-    for subject in subjects: # loop on run keys
-        rsp_features = rsp_features_all[rsp_features_all['subject'] == subject] # load rsp features
-        for event_type in ['sp','sw']: # sp = spindles ; sw = slowwaves
-            events = load_events(subject, event_type) # load sp or sw
+def events_to_resp_coupling(run_key, **p):
 
+    events_dict = {}
+    events_dict['spindles'] = spindles_tag_job.get(run_key).to_dataframe()
+    events_dict['slowwaves'] = slowwaves_tag_job.get(run_key).to_dataframe()
+    rsp_features = resp_tag_job.get(run_key).to_dataframe()
+
+    ds = xr.Dataset()
+
+    for chan in p['chans']:
+        for event_label in ['spindles','slowwaves']:
+            events = events_dict[event_label] # get events df
             mask_channels = events['Channel'] == chan # select events only detected in the channel
-            events_of_sel_chans = events[mask_channels] # keep events of set channels
+            events_of_chan = events[mask_channels] # keep events of set channels
 
-            if event_type == 'sp': 
+            if event_label == 'spindles': 
                 rsp_features_with_the_event = rsp_features[rsp_features['Spindle_Tag'] == 1] # keep only rsp cycles with spindles inside
-            elif event_type == 'sw':
+            elif event_label == 'slowwaves':
                 rsp_features_with_the_event = rsp_features[rsp_features['SlowWave_Tag'] == 1] # keep only rsp cycles with slowwaves inside
 
-            for stage in stages_events_select: # loop only on events detected in the list "stages_events_select"
-                mask_stages = events_of_sel_chans['Stage_Letter'] == stage # mask on the stage
-                events_of_chan_of_stage = events_of_sel_chans[mask_stages]  # keep event of set stage
+            rsp_features_of_the_stage = rsp_features_with_the_event[rsp_features_with_the_event['sleep_stage'] == p['stage']] # keep only respi cycles of the stage (and with events inside)
 
-                rsp_features_of_the_stage = rsp_features_with_the_event[rsp_features_with_the_event['sleep_stage'] == stage] # keep only respi cycles of the stage (and with events inside)
+            if event_label == 'spindles':
 
-                if event_type == 'sp':
+                for sp_speed in ['SS','FS']:
 
-                    for sp_speed in ['SS','FS']:
+                    mask_speed = events_of_chan['Sp_Speed'] == sp_speed
+                    spindles_speed = events_of_chan[mask_speed]
 
-                        mask_speed = events_of_chan_of_stage['Sp_Speed'] == sp_speed
-                        spindles_speed = events_of_chan_of_stage[mask_speed]
+                    for sp_cooccuring in [True, False]:
 
+                        spindles_cooccuring = spindles_speed[spindles_speed['cooccuring'] == sp_cooccuring]
+                        sp_times = spindles_cooccuring[p['timestamps_labels'][event_label]].values
 
-                        for sp_cooccuring in [True, False]:
-                            
-
-                            spindles_cooccuring = spindles_speed[spindles_speed['cooccuring'] == sp_cooccuring]
-                            sp_times = spindles_cooccuring[timestamps_labels[event_type]].values
-
-                            if sp_cooccuring:
-                                occuring_save_label = 'cooccur'
-                            else:
-                                occuring_save_label = 'notcooccur'
-
-                            if sp_times.size != 0:
-                                phase_angles_rsp = get_phase_angles(rsp_features_of_the_stage, sp_times)
-                                np.save(f'../events_coupling/{subject}_{event_type}_{stage}_{occuring_save_label}_{sp_speed}_phase_angles_{chan}.npy', phase_angles_rsp) # save angles from the subject & event type & stage as a .npy
-
-
-                elif event_type == 'sw':
-
-                    for sp_inside in [True, False]:
-
-                        mask_occuring = events_of_chan_of_stage['cooccuring'] == sp_inside
-                        sw_occuring = events_of_chan_of_stage[mask_occuring]
-                        sw_times = sw_occuring[timestamps_labels[event_type]].values
-
-                        if sp_inside:
-                            sp_inside_save_label = 'cooccur'
+                        if sp_cooccuring:
+                            occuring_save_label = 'cooccur'
                         else:
-                            sp_inside_save_label = 'notcooccur'
+                            occuring_save_label = 'notcooccur'
 
-                        phase_angles_rsp = get_phase_angles(rsp_features_of_the_stage, sw_times) # compute phase angles of event for each respi cycle
-                        np.save(f'../events_coupling/{subject}_{event_type}_{stage}_{sp_inside_save_label}_phase_angles_{chan}.npy', phase_angles_rsp) # save angles from the subject & event type & stage as a .npy
-
-
-
-
-            
-
-            
-            
-
-            
+                        if sp_times.size != 0:
+                            phase_angles_rsp = get_phase_angles(rsp_features_of_the_stage, sp_times)
+                            ds[f'{run_key}_{event_label}_{occuring_save_label}_{sp_speed}_{chan}'] = phase_angles_rsp # store angles from the subject & event type in a dataset
 
 
+            elif event_label == 'slowwaves':
+
+                for sp_inside in [True, False]:
+
+                    mask_occuring = events_of_chan['cooccuring'] == sp_inside
+                    sw_occuring = events_of_chan[mask_occuring]
+                    sw_times = sw_occuring[p['timestamps_labels'][event_label]].values
+
+                    if sp_inside:
+                        sp_inside_save_label = 'cooccur'
+                    else:
+                        sp_inside_save_label = 'notcooccur'
+
+                    phase_angles_rsp = get_phase_angles(rsp_features_of_the_stage, sw_times) # compute phase angles of event for each respi cycle
+                    ds[f'{run_key}_{event_label}_{sp_inside_save_label}_{chan}'] = phase_angles_rsp # store angles from the subject & event type in a dataset
+
+    return ds
+
+event_coupling_job = jobtools.Job(precomputedir, 'events_resp_coupling', events_coupling_params, events_to_resp_coupling)
+jobtools.register_job(event_coupling_job)
+
+def test_events_to_resp_coupling():
+    run_key = 'S1'
+    ds_coupling = events_to_resp_coupling(run_key, **events_coupling_params)
+    print(ds_coupling)
 
 
 
-    
+def compute_all():
+    jobtools.compute_job_list(event_coupling_job, run_keys, force_recompute=False, engine='loop')
 
-        
+if __name__ == '__main__':
+    # test_events_to_resp_coupling()
 
+    compute_all()
