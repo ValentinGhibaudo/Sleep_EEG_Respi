@@ -186,7 +186,7 @@ def compute_spectrogram(run_key, **p):
     chan_sleep_staging = p['sleep_staging_params']['chan_sleep_staging']
     fig = yasa.plot_spectrogram(data_reref_masto_with_physio.sel(chan = chan_sleep_staging).values, sf=srate, hypno=yasa_hypno_upsampled, cmap='Spectral_r')
     fig.suptitle(run_key, fontsize = 20)
-    fig.savefig(base_folder / 'spectrograms' / f'{run_key}_spectrogram.png', bbox_inches = 'tight')
+    fig.savefig(base_folder / 'results' / 'spectrograms' / f'{run_key}_spectrogram.png', bbox_inches = 'tight')
     plt.close()
     return None
 
@@ -224,13 +224,17 @@ def save_useful_outputs(): # save concatenated version of sleep stats and metada
     for run_key in run_keys:
         concat_sleep_stats.append(sleep_stats_job.get(run_key).to_dataframe())
         concat_metadata.append(metadata_job.get(run_key).to_dataframe())
-        spectrogram_job.get(run_key)
+        # spectrogram_job.get(run_key)
     
-    all_sleep_stats = pd.concat(concat_sleep_stats)
+    all_sleep_stats = pd.concat(concat_sleep_stats).set_index('subject')
+    all_sleep_stats_save = all_sleep_stats.copy()
+    all_sleep_stats_save.loc['Mean',:] = all_sleep_stats.mean(axis = 0)
+    all_sleep_stats_save.loc['SD',:] = all_sleep_stats.std(axis = 0)
+    
     all_metadata = pd.concat(concat_metadata)
 
-    all_sleep_stats.to_excel(base_folder / 'results' / 'subject_characteristics' / 'sleep_stats.xlsx')
-    all_metadata.to_excel(base_folder / 'results' / 'subject_characteristics' / 'metadata.xlsx')
+    all_sleep_stats_save.round(2).reset_index().to_excel(base_folder / 'results' / 'subject_characteristics' / 'sleep_stats.xlsx', index = False)
+    all_metadata.to_excel(base_folder / 'results' / 'subject_characteristics' / 'metadata.xlsx', index = False)
 
 
 def compute_all():
@@ -244,8 +248,8 @@ if __name__ == '__main__':
     # test_compute_hypnogram()
     # test_upsample_hypnogram()
     # test_compute_spectrogram()
-    test_compute_sleep_stats()
+    # test_compute_sleep_stats()
 
-    # save_useful_outputs()
+    save_useful_outputs()
 
     # compute_all()

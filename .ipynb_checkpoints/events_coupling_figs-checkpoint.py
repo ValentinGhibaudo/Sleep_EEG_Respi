@@ -14,7 +14,6 @@ from events_coupling import event_coupling_job
 from rsp_detection import resp_tag_job
 
 
-print('FIGURES')
 
 p = events_coupling_figs_params
 stage = p['stage']
@@ -26,11 +25,13 @@ if save_article:
     extension = '.tif'
     dpis = 150
     with_title = False
+    print('SAVING FIGURES IN ARTICLE FOLDER')
 else:
     save_folder = base_folder / 'results' / 'events_coupling_figures'
     extension = '.png'
     dpis = 100
     with_title = True
+    print('SAVING FIGURES IN RESULTS FOLDER')
 
 #####
 
@@ -309,7 +310,7 @@ if not save_article :
 
                     ratio = get_respi_ratio(subject = subject, stage = stage, ratio_df = cycles_ratios)
 
-                    angles = load_grouped_angles(subject = subject , event = ev, cooccuring = '*', speed = '*', chan = chan)
+                    angles = load_grouped_angles(subject = subject , event = event_type, cooccuring = '*', speed = '*', chan = chan)
 
                     if angles.size == 0:
                         continue 
@@ -318,10 +319,8 @@ if not save_article :
                     title = f'{subject} - N : {angles.size}'
                     ax.set_title(title)  
 
-            if save_article:
-                fig.savefig(save_folder / f'polar_plot_pooled_{chan}{extension}', dpi = dpis, bbox_inches = 'tight')
-            else:
-                fig.savefig(save_folder / 'global' / f'polar_plot_pooled_{chan}{extension}',  dpi = dpis, bbox_inches = 'tight')
+
+            fig.savefig(save_folder / 'subjects' / f'polar_plot_pooled_{chan}_{event_type}{extension}',  dpi = dpis, bbox_inches = 'tight')
 
             plt.close()
 

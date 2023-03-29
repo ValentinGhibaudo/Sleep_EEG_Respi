@@ -78,7 +78,22 @@ def save_cycle_ratios(run_keys):# COMPUTE MEAN RESP CYCLES RATIO BY SUBJECT BY S
     mean_cycle_ratio_by_stage = pooled_features.groupby('sleep_stage')['cycle_ratio'].mean(numeric_only = True).reset_index()
     mean_cycle_ratio_by_stage.insert(0, 'subject','mean')
     cycles_ratios = pd.concat([cycle_ratio_by_sub_by_stage, mean_cycle_ratio_by_stage])
-    cycles_ratios.to_excel(base_folder / 'results' / 'rest_stats' / 'cycle_ratios.xlsx')
+    cycles_ratios.to_excel(base_folder / 'results' / 'resp_stats' / 'cycle_ratios.xlsx')
+    return None
+
+def save_resp_features(run_keys):
+    useful_resp_features = ['subject','cycle_duration','cycle_ratio','inspi_duration','expi_duration']
+    concat = []
+    for run_key in run_keys:
+        df = resp_tag_job.get(run_key).to_dataframe()
+        df = df[df['sleep_stage'] == 'N2']
+        df.insert(0, 'subject',run_key)
+        concat.append(df[useful_resp_features])
+    pooled_features_all = pd.concat(concat).groupby('subject').mean(numeric_only = True)
+    pooled_features = pooled_features_all.copy().reindex(run_keys)
+    pooled_features.loc['Mean',:] = pooled_features_all.mean(axis = 0).values
+    pooled_features.loc['SD',:] = pooled_features_all.std(axis = 0).values
+    pooled_features.round(2).reset_index().to_excel(base_folder / 'results' / 'resp_stats' / 'resp_features_N2.xlsx', index = False)
     return None
 
 
@@ -152,7 +167,8 @@ if __name__ == '__main__':
     # test_get_stats_resp_cycles_with_events() 
     # test_get_stats_resp_cycles_with_events_stage()
 
-    # save_cycle_ratios()
+    # save_cycle_ratios(run_keys)
+    save_resp_features(run_keys)
 
-    compute_all_figs(run_keys)
+    # compute_all_figs(run_keys)
 

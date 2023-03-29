@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import pingouin as pg
+from fnmatch import filter
 from params import *
 from events_coupling import event_coupling_job
 from configuration import *
@@ -39,8 +40,8 @@ def get_angles(ds, pattern):
         angles.extend(list(ds[coord].values))
     return angles
 
-def load_grouped_angles(subject, event, cooccuring, speed, chan):
 
+def load_grouped_angles(subject, event, cooccuring, speed, chan):
     """
     High level function that load angles according to arguments and concatenate them if '*' argument
 
@@ -58,13 +59,14 @@ def load_grouped_angles(subject, event, cooccuring, speed, chan):
         ds_search = xr.concat(concat, dim = 'subject')
     else:
         ds_search = event_coupling_job.get(subject)
-
+    
     if event == 'spindles':
         pattern = f'{subject}_spindles_{cooccuring}_{speed}_{chan}'
     elif event == 'slowwaves':
         pattern = f'{subject}_slowwaves_{cooccuring}_{chan}'
 
     return np.array(get_angles(ds_search, pattern))
+
 
 p = events_coupling_stats_params
 save_article = p['save_article']
@@ -81,9 +83,16 @@ rows = []
 for subject in subjects:
     for event_type in ['spindles','slowwaves']:
         angles = load_grouped_angles(subject = subject , event = event_type, cooccuring = '*', speed = '*', chan = chan)
+        N = angles.size
         pval, mu, r = get_circ_features(angles)
         rows.append([subject, event_type, pval, pval_stars(pval), mu, r])
-stats = pd.DataFrame(rows, columns = ['Subject','Event','p-Rayleigh','Rayleigh Significance','Mean Direction (°)','Mean Vector Length']).set_index('Subject')
-stats.to_excel(save_folder / 'events_coupling_stats.xlsx')
+stats = pd.DataFrame(rows, columns = ['Subject','Event','p-Rayleigh','Rayleigh Significance','Mean Direction (°)','Mean Vector Length'])
+
+spindles_stats = stats[stats['Event'] == 'spindles'].set_index('Subject')
+slowwaves_stats = stats[stats['Event'] == 'slowwaves'].set_index('Subject')
+
+concat_events = [spindles_stats,slowwaves_stats]
+stats_return = pd.concat(concat_events, axis = 1)
+stats_return.round(3).reset_index().to_excel(save_folder / 'events_coupling_stats.xlsx', index = False)
 
 
