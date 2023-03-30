@@ -114,7 +114,18 @@ def load_grouped_angles(subject, event, cooccuring, speed, chan):
 
     return np.array(get_angles(ds_search, pattern))
 
-def circular_plot_angles(angles, color = None, ax=None, ratio_plot = 0.42, bins = 18, with_rticks = True, with_title = False, with_arrow = True, polar_ticks = 'full'):
+def circular_plot_angles(
+    angles, 
+    color = None, 
+    ax=None, 
+    ratio_plot = 0.42, 
+    bins = 18, 
+    with_rticks = True, 
+    with_title = False, 
+    with_arrow = True, 
+    polar_ticks = 'full',
+    lw = 10):
+
     if ax is None:
         fig, ax = plt.subplots(subplot_kw=dict(projection = 'polar'), constrained_layout = True)
     pval, mu , r, tort_mi, tort_significance = get_circ_features(angles)
@@ -131,20 +142,18 @@ def circular_plot_angles(angles, color = None, ax=None, ratio_plot = 0.42, bins 
     else:
         ax.set_rticks([])
 
-    tick = [max_rticks * 0.997, max_rticks * 0.999] # will display some markers at the exterior part of the polarplot (indicating respi phase)
-    tick_pos = ratio_plot * 360 # angle where ticks will be colored differently = at the inspi to expi transition
-    for t in np.deg2rad(np.arange(0, 360, 2)): # loop ticks displaying around the polar circle
-        if t <= np.deg2rad(tick_pos) and t >= 0: # if angle < resp transition, color is red
-            color = 'r'
-        elif t >= np.deg2rad(tick_pos) and t <= np.deg2rad(360): # if angle > resp transition, color is black
-            color = 'k'
-        ax.plot([t, t], tick, lw=7, color=color, alpha = 1) # plot the ticks, lw = linewidth = width of each tick
+    step = np.pi / 180
+    theta_inspi = np.arange(0, ratio_plot * 2*np.pi, step)
+    theta_expi = np.arange(ratio_plot * 2*np.pi, 2*np.pi, step)
+    for theta, color in zip([theta_inspi, theta_expi],['r','k']):
+        r_plot = np.ones(theta.size) * rmax * 1.05
+        ax.plot(theta, r_plot, lw = lw, color =color)
     
     if polar_ticks == 'full':
-        ax.set_xticks(np.deg2rad([0, 90 , tick_pos , 180 , 270])) # at this angles in degrees, ticks labels will be present
+        ax.set_xticks(np.deg2rad([0, 90 , ratio_plot * 360 , 180 , 270])) # at this angles in degrees, ticks labels will be present
         ax.set_xticklabels(['Start', '90°', 'I>E', '180°','270°']) # labelize polar plot angles
     elif polar_ticks == 'light':
-        ax.set_xticks(np.deg2rad([tick_pos])) # at this angles in degrees, ticks labels will be present
+        ax.set_xticks([ratio_plot * 2*np.pi]) # at this angles in degrees, ticks labels will be present
         ax.set_xticklabels(['I>E']) # labelize polar plot angles
 
     if with_title :
@@ -336,7 +345,7 @@ for c, chan in enumerate(chan_loop):
 
         angles = load_grouped_angles(subject = '*' , event = load, cooccuring = '*', speed = speed, chan = chan)
 
-        circular_plot_angles(angles, color=color, ax=ax, ratio_plot = ratio, with_title = with_title, with_arrow = True, with_rticks = False, polar_ticks = 'light')
+        circular_plot_angles(angles, color=color, ax=ax, ratio_plot = ratio, with_title = with_title, with_arrow = True, with_rticks = False, polar_ticks = 'light', lw = 6)
 
         ts_label = timestamps_labels[ev]
 
