@@ -21,7 +21,7 @@ fig_global_cycle_type = sigma_coupling_figs_params['fig_global_cycle_type']
 save_article = sigma_coupling_figs_params['save_article']
 
 if save_article:
-    save_folder = article_folder / 'figs'
+    save_folder = article_folder 
     fig_format = '.tif'
     dpis = 150
 else:
@@ -33,7 +33,7 @@ concat_phase_freqs = []
 concat_Ns = []
 
 for run_key in run_keys:
-    phase_freq_run_key = sigma_coupling_job.get(run_key)['sigma_coupling'].sel(chan = sigma_coupling_chan)
+    phase_freq_run_key = sigma_coupling_job.get(run_key)['sigma_coupling']
     df_n_run_key = pd.Series(data = phase_freq_run_key.attrs['data_n_cycle_averaged'],
                              index = phase_freq_run_key.coords['cycle_type'].values).to_frame().T
     df_n_run_key.insert(0, 'subject', run_key)
@@ -46,6 +46,7 @@ mean_phase_freqs = xr.concat(concat_phase_freqs, dim = 'subject').assign_coords(
 points = mean_phase_freqs.coords['point'].values
 freqs = mean_phase_freqs.coords['freq'].values
 Ns = pd.concat(concat_Ns).set_index('subject')
+
 
 cycle_types = mean_phase_freqs.coords['cycle_type'].values
 
@@ -61,7 +62,7 @@ if not save_article:
 
             ax = axs[col]
             N = Ns.loc[subject,cycle_type]
-            data = mean_phase_freqs.loc[subject, cycle_type,:,:].data.T
+            data = mean_phase_freqs.loc[subject, cycle_type,sigma_coupling_chan,:,:].data.T
             # print(points.shape, freqs.shape, data.shape)
             im = ax.pcolormesh(points, freqs, data)
             ax.axvline(x = transition_ratio, color = 'r')
@@ -94,7 +95,7 @@ for r in range(nrows):
     for c in range(ncols):
         ax = axs[r,c]
         subject = subject_array[r,c]
-        data = mean_phase_freqs.loc[subject, fig_global_cycle_type,:,:].data.T
+        data = mean_phase_freqs.loc[subject, fig_global_cycle_type,sigma_coupling_chan,:,:].data.T
 
         im = ax.pcolormesh(points, freqs, data)
         ax.axvline(x = transition_ratio, color = 'r')
@@ -116,19 +117,42 @@ plt.close()
 def zscore(da):
     return (da - da.mean()) / da.std()
 
-mean_phase_freqs_zscored = init_da({'subject':run_keys, 'point':points, 'freq':freqs})
+mean_phase_freqs_zscored = init_da({'subject':run_keys, 'chan':channels_events_select, 'point':points, 'freq':freqs})
+
 for subject in run_keys:
-    mean_phase_freqs_zscored.loc[subject,: ,: ] = zscore(mean_phase_freqs.sel(cycle_type = fig_global_cycle_type, subject = subject))
+    for chan in channels_events_select:
+        mean_phase_freqs_zscored.loc[subject, chan , : ,: ] = zscore(mean_phase_freqs.sel(cycle_type = fig_global_cycle_type, subject = subject, chan = chan))
 
-fig, ax = plt.subplots(figsize = (15,7))
+nrows = 3
+ncols = 4
 
-data = mean_phase_freqs_zscored.mean('subject').data.T
-im = ax.pcolormesh(points, freqs, data)
-ax.axvline(x = transition_ratio, color = 'r')
-ax.set_ylabel('Freq [Hz]')
-ax.set_xlabel('Respiration phase')
-ax.set_xticks([0, 0, transition_ratio, 1])
-ax.set_xticklabels([0, 0, 'inspi-expi', '2*Pi'], rotation=45, fontsize=10)
-plt.colorbar(im, ax = ax, label = 'Normalized power [AU]')
+fig, axs = plt.subplots(nrows = nrows, ncols = ncols, figsize = (22,10), constrained_layout = False, sharex = False, sharey = False)
+
+axs[2,3].remove()
+
+delta = 0.1
+vmin = mean_phase_freqs_zscored.quantile(delta)
+vmax = mean_phase_freqs_zscored.quantile(1 - delta)
+
+for ax, chan in zip(axs.flat, channels_events_select):
+
+    data = mean_phase_freqs_zscored.sel(chan = chan).mean('subject').data.T
+    im = ax.pcolormesh(points, freqs, data, vmin=vmin, vmax = vmax)
+    ax.axvline(x = transition_ratio, color = 'r')
+
+    ax.set_ylabel('Freq [Hz]')
+    # ax.set_xlabel('Respiration phase')
+    ax.set_xticks([ 0, transition_ratio, 1])
+    ax.set_xticklabels([ 0, 'inspi-expi', '2*Pi'],fontsize=10)
+    ax.set_title(chan)
+
+ax_x_start = 1.02
+ax_x_width = 0.01
+ax_y_start = 0
+ax_y_height = 1
+cbar_ax = fig.add_axes([ax_x_start, ax_y_start, ax_x_width, ax_y_height])
+clb = fig.colorbar(im, cax=cbar_ax)
+clb.ax.set_title('Normalized power [AU]',fontsize=10)
+
 fig.savefig(save_folder / f'mean_phase_freq_across_subjects{fig_format}', bbox_inches = 'tight', dpi = dpis)
 plt.close()

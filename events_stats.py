@@ -17,6 +17,10 @@ events_df['slowwaves'] = pd.concat([slowwaves_tag_job.get(run_key).to_dataframe(
 
 event_labels = ['spindles','slowwaves']
 
+# MEAN EVENT FEATURES
+for ev in event_labels:
+    df = events_df[ev]
+    df.mean().to_excel(base_folder / 'results' / 'events_stats' / f'{ev}_mean_features.xlsx')
 
 
 # FIG : BARPLOT OF PROPORTION OF EVENTS IN CHANNELS 
@@ -171,6 +175,28 @@ fig, ax = plt.subplots(figsize = (15,5), constrained_layout = True)
 sns.pointplot(data = df_density, x = 'chan', y = 'Density', hue = 'event', ax=ax)
 fig.savefig(base_folder / 'results' / 'events_stats' / 'density_all.png', bbox_inches = 'tight')  
 plt.close()
+
+# N EVENTS 
+print('DF COUNT EVENTS')
+rows = []
+for event_label in event_labels:
+    events = events_df[event_label]
+    for sub in run_keys:
+        for chan in events['Channel'].unique():
+            mask = (events['subject'] == sub) & (events['Stage_Letter'] == stage) & (events['Channel'] == chan)
+            n_ev_sub_stage_chan = events[mask].shape[0]
+
+            row = [event_label ,sub, stage, chan , n_ev_sub_stage_chan]
+            rows.append(row)
+                    
+df_count_chan = pd.DataFrame(rows, columns = ['event','subject','stage','chan','N'])
+df_count_chan.to_excel(base_folder / 'results' / 'events_stats' / 'count_events_chan.xlsx')
+
+df_count = df_count_chan.groupby(['event','subject','stage']).sum(numeric_only = True)
+df_count.to_excel(base_folder / 'results' / 'events_stats' / 'count_events.xlsx')
+df_count.groupby('event').mean(numeric_only = True).to_excel(base_folder / 'results' / 'events_stats' / 'count_events_mean.xlsx')
+df_count.groupby('event').std(numeric_only = True).to_excel(base_folder / 'results' / 'events_stats' / 'count_events_sd.xlsx')
+
 
 # DISTRIBUTIONS OF FREQ OF SPINDLES
 print('FIG : DISTRIB SPINDLE FREQS')

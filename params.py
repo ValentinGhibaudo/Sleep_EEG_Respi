@@ -160,7 +160,7 @@ events_coupling_stats_params = {
 events_coupling_figs_params = {
     'events_coupling_params':events_coupling_params,
     'stage':compute_stage,
-    'save_article':False # will save outputs in article folder if True
+    'save_article':True # will save outputs in article folder if True
 }
 
 cross_correlogram_params = {

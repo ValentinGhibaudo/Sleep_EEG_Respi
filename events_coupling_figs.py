@@ -21,7 +21,7 @@ subjects = run_keys
 save_article = p['save_article']
 
 if save_article:
-    save_folder = article_folder / 'figs'
+    save_folder = article_folder 
     extension = '.tif'
     dpis = 150
     with_title = False
@@ -114,7 +114,7 @@ def load_grouped_angles(subject, event, cooccuring, speed, chan):
 
     return np.array(get_angles(ds_search, pattern))
 
-def circular_plot_angles(angles, color = None, ax=None, ratio_plot = 0.42, bins = 18, with_rticks = True, with_title = False, with_arrow = True):
+def circular_plot_angles(angles, color = None, ax=None, ratio_plot = 0.42, bins = 18, with_rticks = True, with_title = False, with_arrow = True, polar_ticks = 'full'):
     if ax is None:
         fig, ax = plt.subplots(subplot_kw=dict(projection = 'polar'), constrained_layout = True)
     pval, mu , r, tort_mi, tort_significance = get_circ_features(angles)
@@ -131,7 +131,7 @@ def circular_plot_angles(angles, color = None, ax=None, ratio_plot = 0.42, bins 
     else:
         ax.set_rticks([])
 
-    tick = [max_rticks * 0.995, max_rticks * 0.999] # will display some markers at the exterior part of the polarplot (indicating respi phase)
+    tick = [max_rticks * 0.997, max_rticks * 0.999] # will display some markers at the exterior part of the polarplot (indicating respi phase)
     tick_pos = ratio_plot * 360 # angle where ticks will be colored differently = at the inspi to expi transition
     for t in np.deg2rad(np.arange(0, 360, 2)): # loop ticks displaying around the polar circle
         if t <= np.deg2rad(tick_pos) and t >= 0: # if angle < resp transition, color is red
@@ -139,13 +139,19 @@ def circular_plot_angles(angles, color = None, ax=None, ratio_plot = 0.42, bins 
         elif t >= np.deg2rad(tick_pos) and t <= np.deg2rad(360): # if angle > resp transition, color is black
             color = 'k'
         ax.plot([t, t], tick, lw=7, color=color, alpha = 1) # plot the ticks, lw = linewidth = width of each tick
-    ax.set_xticks(np.deg2rad([0, 90 , tick_pos , 180 , 270])) # at this angles in degrees, ticks labels will be present
-    ax.set_xticklabels(['Start', '90°', 'I>E', '180°','270°']) # labelize polar plot angles
+    
+    if polar_ticks == 'full':
+        ax.set_xticks(np.deg2rad([0, 90 , tick_pos , 180 , 270])) # at this angles in degrees, ticks labels will be present
+        ax.set_xticklabels(['Start', '90°', 'I>E', '180°','270°']) # labelize polar plot angles
+    elif polar_ticks == 'light':
+        ax.set_xticks(np.deg2rad([tick_pos])) # at this angles in degrees, ticks labels will be present
+        ax.set_xticklabels(['I>E']) # labelize polar plot angles
+
     if with_title :
         ax.set_title(f'N : {N_events} \n Mean Angle : {mu}° - MVL : {r} - p : {stars} \n Tort MI : {round(tort_mi, 5)} ({tort_significance})')
     if with_arrow:
         if N_events > 1000 and tort_mi > 0.005:
-            color_arrow = 'darkorange'
+            color_arrow = 'red'
         else:
             color_arrow = 'red'
         ax.arrow(np.deg2rad(mu), 0, 0, r, alpha = 1, width = 0.3, label = 'r', color=color_arrow, length_includes_head=True, head_width = 0.4, head_length =  0.01)
@@ -190,12 +196,56 @@ bins = 18 # histograms of distribution of events according to resp phase will be
 
 cycles_ratios = get_cycles_ratios(run_keys) # get cycles ratio for the phase transition in polar plots
 
+
+
+
+
+# POOLED MERGE
+
+ncols = 2
+
+colors = {'spindles':'dimgrey', 'slowwaves':'forestgreen'}
+
+if save_article:
+    chan_loop = ['Fz']
+else:
+    chan_loop = channels_events_select
+
+for chan in chan_loop:
+    fig, axs = plt.subplots(ncols=ncols, figsize = (15,7), constrained_layout = True, subplot_kw=dict(projection = 'polar'))
+
+    for c, ev in enumerate(['spindles','slowwaves']):
+        ax = axs[c]
+
+        ev_title = event_types_titles[ev]
+
+        ratio = get_respi_ratio(subject = '*', stage = stage, ratio_df = cycles_ratios)
+
+        angles = load_grouped_angles(subject = '*' , event = ev, cooccuring = '*', speed = '*', chan = chan)
+
+        color = colors[ev]
+        circular_plot_angles(angles, color=color, ax=ax, ratio_plot = ratio, with_title = with_title, with_arrow = True, with_rticks = True)
+        ts_label = timestamps_labels[ev]
+        if save_article:
+            title = f'{event_types_titles[ev]} \n N : {angles.size}'
+        else:
+            title = f'{ev} {ts_label} \n' + ax.get_title()
+        ax.set_title(title, fontsize = 15, y = 1.1)  
+
+    if save_article:
+        fig.savefig(save_folder / f'polar_plot_pooled_{chan}_merge_speed{extension}', dpi = dpis, bbox_inches = 'tight')
+    else:
+        fig.savefig(save_folder / 'global' / f'polar_plot_pooled_{chan}_merge_speed{extension}', dpi = dpis, bbox_inches = 'tight')
+    plt.close()
+
+
+# POOLED WITH SPINDLE SPEED QUESTION
+
 dict_figure = {
     'spindles':{'SS':{'pos':0, 'color':None},'FS':{'pos':1, 'color':'skyblue'}},
     'slowwaves':{'pos':2, 'color':'forestgreen'},
 }
 
-# POOLED WITH SPEED
 ncols = 3
 
 if save_article:
@@ -256,73 +306,104 @@ for chan in chan_loop:
     plt.close()
 
 
-# POOLED MERGE
-if not save_article:
-    ncols = 2
-
-    colors = {'spindles':None, 'slowwaves':'forestgreen'}
-
-    for chan in channels_events_select:
-        fig, axs = plt.subplots(ncols=ncols, figsize = (15,7), constrained_layout = True, subplot_kw=dict(projection = 'polar'))
-
-        for c, ev in enumerate(['spindles','slowwaves']):
-            ax = axs[c]
-
-            ev_title = event_types_titles[ev]
-
-            ratio = get_respi_ratio(subject = '*', stage = stage, ratio_df = cycles_ratios)
-
-            angles = load_grouped_angles(subject = '*' , event = ev, cooccuring = '*', speed = '*', chan = chan)
-
-            color = colors[ev]
-            circular_plot_angles(angles, color=color, ax=ax, ratio_plot = ratio, with_title = with_title, with_arrow = True, with_rticks = True)
-            ts_label = timestamps_labels[ev]
-            title = f'{ev} {ts_label} \n' + ax.get_title()
-            ax.set_title(title, fontsize = 15, y = 1.1)  
-
-        fig.savefig(save_folder / 'global' / f'polar_plot_pooled_{chan}_merge_speed.png', bbox_inches = 'tight')
-        plt.close()
+# POOLED WITH SPINDLE SPEED QUESTION and ALL CHANNEL QUESTION
 
 
+chan_loop = channels_events_select
 
-# SUBJECT
-if not save_article : 
-    print('FIG by SUBJECT')
-    colors = {'spindles':None , 'slowwaves':'forestgreen'}
+nrows = 3
+ncols = len(chan_loop)
+ev_looped = ['Slow spindles','Fast spindles','Slow-Waves']
+ev_load = {'Slow spindles':'spindles_SS','Fast spindles':'spindles_FS','Slow-Waves':'slowwaves'}
+colors = {'Slow spindles':None, 'Fast spindles':'skyblue', 'Slow-Waves':'forestgreen'}
 
-    for chan in chan_loop:
-        for event_type in ['spindles','slowwaves']:
-            ts_label = timestamps_labels[ev]
-            color = colors[event_type]
+fig, axs = plt.subplots(nrows = nrows, ncols=ncols, figsize = (19,7), constrained_layout = True, subplot_kw=dict(projection = 'polar'))
 
-            nrows = 4
-            ncols = 5
+for c, chan in enumerate(chan_loop):
+    for r, ev_loop in enumerate(ev_looped):
+        ax = axs[r,c]
 
-            subjects_array = np.array(run_keys).reshape(nrows, ncols)
-            fig, axs = plt.subplots(nrows, ncols, figsize = (20,20), constrained_layout = True, subplot_kw=dict(projection = 'polar'))
+        color = colors[ev_loop]
 
-            fig.suptitle(f'{event_type} {ts_label} polar distributions along respiration phase')
+        if not ev_loop == 'Slow-Waves':
+            load, speed = ev_load[ev_loop].split('_')
+        else:
+            load = ev_load[ev_loop]
 
-            for r in range(nrows):
-                for c in range(ncols):
-                    ax = axs[r,c]
-                    subject = subjects_array[r,c]
+        ev_title = event_types_titles[ev]
+        
+        ratio = get_respi_ratio(subject = '*', stage = stage, ratio_df = cycles_ratios)
 
-                    ratio = get_respi_ratio(subject = subject, stage = stage, ratio_df = cycles_ratios)
+        angles = load_grouped_angles(subject = '*' , event = load, cooccuring = '*', speed = speed, chan = chan)
 
-                    angles = load_grouped_angles(subject = subject , event = event_type, cooccuring = '*', speed = '*', chan = chan)
+        circular_plot_angles(angles, color=color, ax=ax, ratio_plot = ratio, with_title = with_title, with_arrow = True, with_rticks = False, polar_ticks = 'light')
 
-                    if angles.size == 0:
-                        continue 
+        ts_label = timestamps_labels[ev]
 
-                    circular_plot_angles(angles, color=color, ax=ax, ratio_plot = ratio, with_title = False, with_arrow = True, with_rticks = True)
-                    title = f'{subject} - N : {angles.size}'
-                    ax.set_title(title)  
+        if save_article:
+            if r == 0:
+                title = f'{chan} \n {ev_loop} \n N : {angles.size}'
+            else:
+                title = f'{ev_loop} \n N : {angles.size}'
+        else:
+            if r == 0:
+                title = f'{chan} \n {ev_loop} \n' + ax.get_title()
+            else:
+                title = ax.get_title()
 
 
-            fig.savefig(save_folder / 'subjects' / f'polar_plot_pooled_{chan}_{event_type}{extension}',  dpi = dpis, bbox_inches = 'tight')
+        ax.set_title(title, fontsize = 15, y = 1.1)  
 
-            plt.close()
+    
+    if save_article:
+        fig.savefig(save_folder / f'polar_plot_pooled_all_chans{extension}', dpi = dpis, bbox_inches = 'tight')
+    else:
+        fig.savefig(save_folder / 'global' / f'polar_plot_pooled_all_chans{extension}',  dpi = dpis, bbox_inches = 'tight')
+        
+    plt.close()
+
+
+
+
+
+# # SUBJECT
+# if not save_article : 
+#     print('FIG by SUBJECT')
+#     colors = {'spindles':None , 'slowwaves':'forestgreen'}
+
+#     for chan in chan_loop:
+#         for event_type in ['spindles','slowwaves']:
+#             ts_label = timestamps_labels[ev]
+#             color = colors[event_type]
+
+#             nrows = 4
+#             ncols = 5
+
+#             subjects_array = np.array(run_keys).reshape(nrows, ncols)
+#             fig, axs = plt.subplots(nrows, ncols, figsize = (20,20), constrained_layout = True, subplot_kw=dict(projection = 'polar'))
+
+#             fig.suptitle(f'{event_type} {ts_label} polar distributions along respiration phase')
+
+#             for r in range(nrows):
+#                 for c in range(ncols):
+#                     ax = axs[r,c]
+#                     subject = subjects_array[r,c]
+
+#                     ratio = get_respi_ratio(subject = subject, stage = stage, ratio_df = cycles_ratios)
+
+#                     angles = load_grouped_angles(subject = subject , event = event_type, cooccuring = '*', speed = '*', chan = chan)
+
+#                     if angles.size == 0:
+#                         continue 
+
+#                     circular_plot_angles(angles, color=color, ax=ax, ratio_plot = ratio, with_title = False, with_arrow = True, with_rticks = True)
+#                     title = f'{subject} - N : {angles.size}'
+#                     ax.set_title(title)  
+
+
+#             fig.savefig(save_folder / 'subjects' / f'polar_plot_pooled_{chan}_{event_type}{extension}',  dpi = dpis, bbox_inches = 'tight')
+
+#             plt.close()
 
 print('SUCCESS')
     
