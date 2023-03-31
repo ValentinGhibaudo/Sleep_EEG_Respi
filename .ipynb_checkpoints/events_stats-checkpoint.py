@@ -1,173 +1,317 @@
 import pandas as pd
 import seaborn as sns
 import numpy as np
-from params import subjects, dpis, interesting_variables, encoder_events, stages_events_select, spindles_freq_threshold
 import matplotlib.pyplot as plt
+from params import *
+from configuration import base_folder
+from detect_sleep_events import spindles_tag_job, slowwaves_tag_job
+from preproc_staging import sleep_stats_job
+
+p = events_stats_params
+stage = p['stage']
+interesting_variables = p['interesting_variables']
+
+events_df = {}
+events_df['spindles'] = pd.concat([spindles_tag_job.get(run_key).to_dataframe() for run_key in run_keys])
+events_df['slowwaves'] = pd.concat([slowwaves_tag_job.get(run_key).to_dataframe() for run_key in run_keys])
+
+event_labels = ['spindles','slowwaves']
+
+# MEAN EVENT FEATURES
+for ev in event_labels:
+    df = events_df[ev]
+    mean = df.mean().rename('mean').to_frame().T
+    sd = df.std().rename('sd').to_frame().T
+    pd.concat([mean,sd], axis =0).to_excel(base_folder / 'results' / 'events_stats' / f'{ev}_mean_sd_features.xlsx')
 
 
-event_types = ['sp','sw'] # types of event = spindles and slow waves
-event_types_loads = {'sp':'spindles','sw':'slowwaves'} # label to load
-event_types_titles = {'sp':'Spindles','sw':'Slow-Waves'} # clean label for titles
-events_tables = {'sp':[],'sw':[]} # prepare lists for event types to pool events from all subjects
+# FIG : BARPLOT OF PROPORTION OF EVENTS IN CHANNELS 
+print('FIG : BARPLOT PROPORTION EVENTS IN CHANS')
+fig, axs = plt.subplots(nrows = len(event_labels), figsize = (15,8), constrained_layout = True)
+predictor = 'Channel'
+for row, event_label in enumerate(event_labels):
+    ax = axs[row]
 
-for subject in subjects:
-    for event_type in event_types:
-        events = pd.read_excel(f'../event_detection/{subject}_{event_types_loads[event_type]}_cooccuring.xlsx',index_col = 0) # load events of the subject
-        events.insert(0, 'subject', subject) # add subject label at col 0
-        events_tables[event_type].append(events) # add the dataframe of the subject to a list
+    df = events_df[event_label]
+    prop = df[predictor].value_counts(normalize=True, sort = False).to_frame().reset_index().rename(columns={'index':predictor, predictor:'Proportion'}) # proportion of events 
 
-events_df = {event_type:pd.concat(events_tables[event_type]) for event_type in event_types} # pool all dataframes from subjects
+    sns.barplot(data=prop, x = predictor, y = 'Proportion', ax=ax)
+    ax.set_ylabel(f'Proportion')
+    ax.set_title(f'{event_label} by channel')
 
-for event_type in event_types:
-    events_df[event_type].describe()[interesting_variables[event_type]].to_excel(f'../events_stats/{event_type}_description.xlsx') # save estimators for the event type
-    events_df[event_type].groupby('Channel').mean(numeric_only=True)[interesting_variables[event_type]].to_excel(f'../events_stats/{event_type}_gby_chan.xlsx') # save estimators for chan effet on the event
-    events_df[event_type].groupby('Stage_Letter').mean(numeric_only=True)[interesting_variables[event_type]].to_excel(f'../events_stats/{event_type}_gby_stage.xlsx') # save estimators for stage effet on the event
-    
-    
-    
-# FIG : BARPLOT OF PROPORTION OF EVENTS IN STAGES or CHANNELS 
-print('FIG 1')
-fig, axs = plt.subplots(nrows = 2, ncols = 2, figsize = (15,8), constrained_layout = True)
-
-for row, event_type in enumerate(event_types):
-    for col, predictor in enumerate(['Channel','Stage_Letter']):
-        ax = axs[row, col]
-
-        df = events_df[event_type]
-        prop = df[predictor].value_counts(normalize=True, sort = False).to_frame().reset_index().rename(columns={'index':predictor, predictor:'Proportion'}) # proportion of events 
-
-        if col == 0:
-            title = 'Events by channel'
-        else:
-            title = 'Events by stage'
-        if row == 1:
-            title = ''
-        ax = axs[row, col]
-        if predictor == 'Stage_Letter':
-            sns.barplot(data=prop, x = predictor, y = 'Proportion', ax=ax, order=['W','R','N1','N2','N3'])
-        else:
-            sns.barplot(data=prop, x = predictor, y = 'Proportion', ax=ax)
-        ax.set_ylabel(f'Proportion of {event_types_titles[event_type]}')
-        ax.set_title(title)
-
-plt.savefig('../events_stats/barplots_events', bbox_inches = 'tight')
+fig.savefig(base_folder / 'results' / 'events_stats' / 'barplots_events_by_channel.png', bbox_inches = 'tight')
 plt.close()
 
-# FIG x 2 : BOXPLOT OF PROPORTION OF EFFECT OF CHANNEL or STAGE ON THE EVENTS FEATURES 
-print('FIG 2')
-event_type_cooccur_label = {'sp':'in_slowwave', 'sw':'sp_inside'}
-for event_type in event_types:
-    df_boxplot = events_df[event_type]
-    fig, axs = plt.subplots(nrows = 3, ncols = len(interesting_variables[event_type]), figsize = (20,10), constrained_layout = True) # boxplot effects of stage or chan on events params
-    fig.suptitle(f'{event_types_titles[event_type]} characteristics')
-    for col, outcome in enumerate(interesting_variables[event_type]):
-        for row, predictor in enumerate(['Channel','Stage_Letter',event_type_cooccur_label[event_type]]):
-            ax = axs[row, col]
-            sns.boxplot(data = df_boxplot, x = predictor, y = outcome, ax=ax)
-            if predictor == 'Channel':
-                ax.tick_params(axis='x', rotation=90)
+# FIG : NUMBER OF COOCCURING EVENTS
+print('FIG : N COOCCURING EVENTS')
+nrows = len(event_labels)
+ncols = events_df['spindles']['Channel'].unique().size
 
-    plt.savefig(f'../events_stats/{event_type}_boxplot', bbox_inches = 'tight')
+fig, axs = plt.subplots(nrows = nrows, ncols =ncols,  figsize = (20,7), constrained_layout = True)
+fig.suptitle('Number of cooccuring events', fontsize = 20, y = 1.04)
+for row, event_label in enumerate(event_labels):
+    for col, chan in enumerate(events_df['spindles']['Channel'].unique()):
+        ax = axs[row,col]
+
+        df = events_df[event_label]
+        df_plot = df[df['Channel'] == chan]
+        df_plot['cooccuring'].value_counts(normalize=False).plot.bar(ax=ax)
+        if col == 0:
+            ax.set_ylabel(f'N')
+        else:
+            ax.set_ylabel(None)
+        ax.set_title(f'{event_label} in {chan}')
+        for bar in ax.containers:
+            ax.bar_label(bar)
+
+fig.savefig(base_folder / 'results' / 'events_stats' / 'cooccuring_events.png', bbox_inches = 'tight')
+plt.close()
+
+
+# FIG : NUMBER OF COOCCURING EVENTS
+print('FIG : N SLOW VS FAST SPINDLES')
+nrows = 4
+ncols = 5
+subjects_array = np.array(run_keys).reshape(nrows, ncols)
+fig, axs = plt.subplots(nrows,ncols, figsize = (20,15), constrained_layout = True)
+fig.suptitle('Number of fast vs slow spindles (all chans pooled)', y = 1.04, fontsize = 20)
+for r in range(nrows):
+    for c in range(ncols):
+        ax = axs[r,c]
+        sub = subjects_array[r,c]
+        spindles_sub = events_df['spindles'][events_df['spindles']['subject'] == sub]
+        spindles_sub['Sp_Speed'].value_counts().reindex(['SS','FS']).plot.bar(ax=ax)
+        ax.set_ylabel(sub)
+        for bar in ax.containers:
+            ax.bar_label(bar)
+
+fig.savefig(base_folder / 'results' / 'events_stats' / 'speed_spindles.png', bbox_inches = 'tight')  
+plt.close()
+
+
+nrows = 4
+ncols = 5
+chan_sel = p['chan']
+subjects_array = np.array(run_keys).reshape(nrows, ncols)
+fig, axs = plt.subplots(nrows,ncols, figsize = (20,15), constrained_layout = True)
+fig.suptitle(f'Number of fast vs slow spindles in {chan_sel}', y = 1.04, fontsize = 20)
+for r in range(nrows):
+    for c in range(ncols):
+        ax = axs[r,c]
+        sub = subjects_array[r,c]
+        spindles_sub = events_df['spindles'][(events_df['spindles']['subject'] == sub) & (events_df['spindles']['Channel'] == chan_sel)]
+        spindles_sub['Sp_Speed'].value_counts().reindex(['SS','FS']).plot.bar(ax=ax)
+        ax.set_ylabel(sub)
+        for bar in ax.containers:
+            ax.bar_label(bar)
+fig.savefig(base_folder / 'results' / 'events_stats' / f'speed_spindles_{chan_sel}.png', bbox_inches = 'tight')  
+plt.close()
+
+
+
+
+chan_sel = p['chan']
+fig, ax = plt.subplots(figsize = (15,5), constrained_layout = True)
+fig.suptitle(f'Number of fast vs slow spindles in {chan_sel}', y = 1.04, fontsize = 20)
+spindles_sub = events_df['spindles'][(events_df['spindles']['Channel'] == chan_sel)]
+spindles_sub['Sp_Speed'].value_counts().reindex(['SS','FS']).plot.bar(ax=ax)
+ax.set_ylabel('N')
+for bar in ax.containers:
+    ax.bar_label(bar)
+fig.savefig(base_folder / 'results' / 'events_stats' / f'speed_spindles_{chan_sel}_all.png', bbox_inches = 'tight')  
+plt.close()
+
+
+
+# FIG : PLOT OF EFFECT OF CHANNEL ON THE EVENTS FEATURES 
+print('FIG : CHAN EFFECT ON FEATURES')
+for event_label in event_labels:
+    df_boxplot = events_df[event_label]
+    fig, axs = plt.subplots(nrows = len(interesting_variables[event_label]), figsize = (20,20), constrained_layout = True) # boxplot effects of stage or chan on events params
+    fig.suptitle(f'{event_label} characteristics')
+    for row, outcome in enumerate(interesting_variables[event_label]):
+        ax = axs[row]
+        sns.pointplot(data = df_boxplot, x = 'Channel', y = outcome, ax=ax)
+        ax.tick_params(axis='x', rotation=90)
+
+    fig.savefig(base_folder / 'results' / 'events_stats' / f'{event_label}_metrics_by_channel.png', bbox_inches = 'tight')
     plt.close()
     
     
-# FIG 3 : Density of spindles by chan by stage
-print('FIG 3')
+# FIG : Density of events by chan
+print('FIG : DENSITY')
+
+sleep_stats = pd.concat([sleep_stats_job.get(run_key).to_dataframe() for run_key in run_keys])
+
 def get_stage_duration(sleep_stats, subject, stage):
     return sleep_stats.set_index('subject').loc[subject, stage]
 
-sleep_stats = pd.read_excel(f'../subject_characteristics/global_sleep_stats_{encoder_events}.xlsx', index_col = 0)
 rows = []
-evs = ['spindles','slowwaves']
-for ev in evs:
-    for sub in subjects:
-        events = pd.read_excel(f'../event_detection/{sub}_{ev}_reref_{encoder_events}.xlsx', index_col = 0)
-        n_ev_total = events.shape[0]
-        for stage in ['N2','N3']:
-            events_stage = events[events['Stage_Letter'] == stage]
-            n_ev_stage = events_stage.shape[0]
-            stage_duration = get_stage_duration(sleep_stats, sub, stage)
-            density_by_stage = n_ev_stage / stage_duration
-            for chan in events_stage['Channel'].unique():
-                events_stage_chan = events_stage[events_stage['Channel'] == chan]
-                n_ev_stage_chan = events_stage_chan.shape[0]
-                density_by_stage_by_chan = n_ev_stage_chan / stage_duration
+for event_label in event_labels:
+    events = events_df[event_label]
+    for sub in run_keys:
+        sub_stage_duration = get_stage_duration(sleep_stats, sub, stage)
+        for chan in events['Channel'].unique():
+            mask = (events['subject'] == sub) & (events['Stage_Letter'] == stage) & (events['Channel'] == chan)
+            n_ev_sub_stage_chan = events[mask].shape[0]
+            density_by_stage_by_chan = n_ev_sub_stage_chan / sub_stage_duration
 
-                row = [ev ,sub, stage, chan, n_ev_total, stage_duration, n_ev_stage, density_by_stage, n_ev_stage_chan, density_by_stage_by_chan]
-                rows.append(row)
+            row = [event_label ,sub, stage, sub_stage_duration, chan , n_ev_sub_stage_chan, density_by_stage_by_chan]
+            rows.append(row)
                     
-df_density = pd.DataFrame(rows, columns = ['event','subject','stage','chan','n_events_total','stage_duration',
-                                           'n_events_stage','density_by_stage','n_events_stage_chan','density_by_stage_by_chan'])
+df_density = pd.DataFrame(rows, columns = ['event','subject','stage','stage_duration','chan','N','Density'])
+df_density.to_excel(base_folder / 'results' / 'events_stats' / 'density.xlsx')
 
-df_density.to_excel('../events_stats/density.xlsx')
 
-order = ['Fp2','Fp1','C3','C4','Fz','Cz','Pz','T4','T3','O1','O2']
+nrows = len(run_keys)
+fig, axs = plt.subplots(nrows, figsize = (20,30), constrained_layout = True)
+for row, sub in enumerate(run_keys):
+    ax = axs[row]
+    density_sub = df_density[df_density['subject'] == sub]
+    sns.pointplot(data = density_sub, x = 'chan', y = 'Density', hue = 'event', ax=ax)
+    ax.set_ylabel(f'Density in {sub}')
+fig.savefig(base_folder / 'results' / 'events_stats' / 'densities.png', bbox_inches = 'tight')  
+plt.close()
 
-fig, axs = plt.subplots(nrows =2, figsize = (15,10), constrained_layout = True)
-for r, ev in enumerate(evs):
-    df_plot = df_density[df_density['event'] == ev]
-    ax = axs[r]
-    sns.pointplot(data = df_plot , x = 'chan', y= 'density_by_stage_by_chan', hue = 'stage', ax=ax, order = order)
-    ax.set_title(ev)
-    # ax.set_ylim(0,4)
-    ax.set_ylabel(f"Density of {ev} by minute / stage / chan")
+fig, ax = plt.subplots(figsize = (15,5), constrained_layout = True)
+sns.pointplot(data = df_density, x = 'chan', y = 'Density', hue = 'event', ax=ax)
+fig.savefig(base_folder / 'results' / 'events_stats' / 'density_all.png', bbox_inches = 'tight')  
+plt.close()
 
-plt.savefig('../events_stats/density_events')
+# N EVENTS 
+print('DF COUNT EVENTS')
+rows = []
+for event_label in event_labels:
+    events = events_df[event_label]
+    for sub in run_keys:
+        for chan in events['Channel'].unique():
+            mask = (events['subject'] == sub) & (events['Stage_Letter'] == stage) & (events['Channel'] == chan)
+            n_ev_sub_stage_chan = events[mask].shape[0]
+
+            row = [event_label ,sub, stage, chan , n_ev_sub_stage_chan]
+            rows.append(row)
+                    
+df_count_chan = pd.DataFrame(rows, columns = ['event','subject','stage','chan','N'])
+df_count_chan.to_excel(base_folder / 'results' / 'events_stats' / 'count_events_chan.xlsx')
+
+df_count = df_count_chan.groupby(['event','subject','stage']).sum(numeric_only = True)
+df_count.to_excel(base_folder / 'results' / 'events_stats' / 'count_events.xlsx')
+df_count.groupby('event').mean(numeric_only = True).to_excel(base_folder / 'results' / 'events_stats' / 'count_events_mean.xlsx')
+df_count.groupby('event').std(numeric_only = True).to_excel(base_folder / 'results' / 'events_stats' / 'count_events_sd.xlsx')
+
+
+# DISTRIBUTIONS OF FREQ OF SPINDLES
+print('FIG : DISTRIB SPINDLE FREQS')
+nrows = 4
+ncols = 5
+subjects_array = np.array(run_keys).reshape(nrows, ncols)
+fig, axs = plt.subplots(nrows,ncols, figsize = (20,15), constrained_layout = True)
+fig.suptitle('Distributions of spindle frequencies', y = 1.04, fontsize = 20)
+for r in range(nrows):
+    for c in range(ncols):
+        ax = axs[r,c]
+        sub = subjects_array[r,c]
+        spindles_sub = events_df['spindles'][events_df['spindles']['subject'] == sub]
+        sns.kdeplot(data = spindles_sub, x = 'Frequency' , hue = 'Channel', ax=ax, bw_adjust = 0.4)
+        ax.axvline(x = spindles_freq_threshold[sub], color = 'k')
+        ax.set_ylabel(sub)
+        ax.set_xlim(12,15)
+        if r == (nrows - 1):
+            ax.set_xlabel('Frequency [Hz]')
+fig.savefig(base_folder / 'results' / 'events_stats' / 'frequencies_spindles_kde.png', bbox_inches = 'tight')  
+plt.close()
+
+nrows = 4
+ncols = 5
+subjects_array = np.array(run_keys).reshape(nrows, ncols)
+fig, axs = plt.subplots(nrows,ncols, figsize = (20,15), constrained_layout = True)
+fig.suptitle('Distributions of spindle frequencies', y = 1.04, fontsize = 20)
+for r in range(nrows):
+    for c in range(ncols):
+        ax = axs[r,c]
+        sub = subjects_array[r,c]
+        spindles_sub = events_df['spindles'][events_df['spindles']['subject'] == sub]
+        ax.hist(spindles_sub['Frequency'], bins = 100)
+        ax.axvline(x = spindles_freq_threshold[sub], color = 'r')
+        ax.set_ylabel(sub)
+        ax.set_xlim(12,15)
+        if r == (nrows - 1):
+            ax.set_xlabel('Frequency [Hz]')
+fig.savefig(base_folder / 'results' / 'events_stats' / 'frequencies_spindles.png', bbox_inches = 'tight')  
 plt.close()
 
 
-
-
-
 # DISTRIBUTIONS
-print('FIG 4')
-resp_features_to_include = ['cycle_duration','inspi_duration','expi_duration','cycle_freq','cycle_ratio','inspi_amplitude','expi_amplitude','inspi_volume','expi_volume']
-ev_features_to_include = {'sp':['Duration', 'Amplitude', 'RMS', 'AbsPower','RelPower', 'Frequency', 'Oscillations', 'Symmetry'],
-'sw':['Duration','ValNegPeak', 'ValPosPeak', 'PTP', 'Slope', 'Frequency']}
+print('FIG : ALL DISTRIBUTIONS')
 
-for event_type in event_types:
-    df_events = events_df[event_type]
-    df_events_staged = df_events[df_events['Stage_Letter'].isin(stages_events_select)]
-    
-    for subject in subjects:
-        print(subject)
-        df_events_staged_subject = df_events_staged[df_events_staged['subject'] == subject]
-        N = df_events_staged_subject.shape[0]
+ev_features_to_include = {
+    'spindles':['Duration', 'Amplitude', 'RMS', 'AbsPower','RelPower', 'Frequency', 'Oscillations'],                        
+    'slowwaves':['Duration','ValNegPeak', 'ValPosPeak', 'PTP', 'Slope', 'Frequency']
+    }
+
+for event_label in event_labels:
+    events = events_df[event_label]
+    for subject in run_keys:
+
+        nrows = events['Channel'].unique().size
+        ncols = len(ev_features_to_include[event_label])
+        fig, axs = plt.subplots(nrows = nrows, 
+                                ncols = ncols, 
+                                figsize = (20,20),
+                                constrained_layout = True)
         
-        nrows = 2
-        if event_type == 'sp':
-            ncols = 4
-        else:
-            ncols = 3
+        fig.suptitle(f'{subject} - {event_label}', fontsize = 20, y = 1.04)
+
+        for r, chan in enumerate(events['Channel'].unique()):
+            mask = (events['subject'] == sub) & (events['Stage_Letter'] == stage) & (events['Channel'] == chan)
+            events_sub_stage_chan = events[mask]
+            N = events_sub_stage_chan.shape[0]
             
-        ev_features_to_include_array = np.array(ev_features_to_include[event_type]).reshape(nrows,ncols)
-        fig, axs = plt.subplots(nrows, ncols, figsize = (20,10), constrained_layout = True)
-        fig.suptitle(f'{subject} - N : {int(N)} {event_types_titles[event_type]}', fontsize = 20, y = 1.05)
-        for r in range(nrows):
-            for c in range(ncols):
+            for c, metric in enumerate(ev_features_to_include[event_label]):
                 ax = axs[r,c]
-                metric = ev_features_to_include_array[r,c]
-                ax.hist(df_events_staged_subject[metric], bins = 100)
-                ax.set_title(metric)
-                if metric == 'Frequency' and event_type == 'sp':
+                ax.hist(events_sub_stage_chan[metric], bins = 50)
+
+                if r == 0:
+                    ax.set_title(metric)
+                
+                if c == 0:
+                    ax.set_ylabel(chan)
+
+                if metric == 'Frequency' and event_label == 'spindles':
                     ax.axvline(x = spindles_freq_threshold[subject], color = 'r')
-        plt.savefig(f'../events_stats/{subject}_{event_type}_distributions', bbox_inches = 'tight')
+
+        fig.savefig(base_folder / 'results' / 'events_stats' / f'{subject}_{event_label}_distributions.png', bbox_inches = 'tight')
         plt.close()
         
-        for predictor in ['Stage_Letter','Channel']:
-            fig, axs = plt.subplots(nrows, ncols, figsize = (20,10), constrained_layout = True)
-            fig.suptitle(f'{subject} - N : {int(N)} {event_types_titles[event_type]}', fontsize = 20, y = 1.05)
-            for r in range(nrows):
-                for c in range(ncols):
-                    ax = axs[r,c]
-                    metric = ev_features_to_include_array[r,c]
-                    sns.kdeplot(data = df_events_staged_subject, x = metric , hue = predictor, ax=ax)
-                    if metric == 'Frequency' and event_type == 'sp':
-                        ax.axvline(x = spindles_freq_threshold[subject], color = 'r')
-                    ax.set_title(metric)
-            plt.savefig(f'../events_stats/{subject}_{event_type}_kde_{predictor}', bbox_inches = 'tight')
-            plt.close()
 
+
+        # KDEPLOT
+        fig, axs = plt.subplots(ncols = len(ev_features_to_include[event_label]), figsize = (20,5), constrained_layout = True)
+        fig.suptitle(f'{subject} - {event_label}', fontsize = 20, y = 1.04)
+
+        mask_kde_plot = (events['subject'] == sub) & (events['Stage_Letter'] == stage)
+        data_kdeplot =  events[mask_kde_plot]
+
+
+        for c , metric in enumerate(ev_features_to_include[event_label]):
+            ax = axs[c]
+            sns.kdeplot(data = data_kdeplot, x = metric , hue = 'Channel', ax=ax, bw_adjust = 0.5)
+            if metric == 'Frequency' and event_label == 'spindles':
+                ax.axvline(x = spindles_freq_threshold[subject], color = 'r')
+            ax.set_title(metric)
+        fig.savefig(base_folder / 'results' / 'events_stats' / f'kdeplot_{subject}_{event_label}.png', bbox_inches = 'tight')
+        plt.close()
+
+
+# KDEPLOT POOLED SPINDLES
+print('FIG : KDEPLOT POOLED')
+fig, ax = plt.subplots(figsize = (15,5), constrained_layout = True)
+sns.kdeplot(data = events_df['spindles'], x = 'Frequency' , hue = 'Channel', ax=ax, bw_adjust = 0.5)
+mean_freq_tresh = np.mean(np.array([spindles_freq_threshold[run_key] for run_key in run_keys]))
+ax.axvline(x = mean_freq_tresh, color = 'k')
+# ax.set_title(f'Spindles frequency pooled (mean thresh : {round(mean_freq_tresh, 2)} Hz)')
+fig.savefig(base_folder / 'results' / 'events_stats' / f'kdeplot_spindles_pooled.png', bbox_inches = 'tight')
+plt.close()
 
 
             

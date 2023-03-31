@@ -20,7 +20,9 @@ event_labels = ['spindles','slowwaves']
 # MEAN EVENT FEATURES
 for ev in event_labels:
     df = events_df[ev]
-    df.mean().to_excel(base_folder / 'results' / 'events_stats' / f'{ev}_mean_features.xlsx')
+    mean = df.mean().rename('mean').to_frame().T
+    sd = df.std().rename('sd').to_frame().T
+    pd.concat([mean,sd], axis =0).to_excel(base_folder / 'results' / 'events_stats' / f'{ev}_mean_sd_features.xlsx')
 
 
 # FIG : BARPLOT OF PROPORTION OF EVENTS IN CHANNELS 
@@ -307,7 +309,7 @@ fig, ax = plt.subplots(figsize = (15,5), constrained_layout = True)
 sns.kdeplot(data = events_df['spindles'], x = 'Frequency' , hue = 'Channel', ax=ax, bw_adjust = 0.5)
 mean_freq_tresh = np.mean(np.array([spindles_freq_threshold[run_key] for run_key in run_keys]))
 ax.axvline(x = mean_freq_tresh, color = 'k')
-ax.set_title(f'Spindles frequency pooled (mean thresh : {round(mean_freq_tresh, 2)} Hz)')
+# ax.set_title(f'Spindles frequency pooled (mean thresh : {round(mean_freq_tresh, 2)} Hz)')
 fig.savefig(base_folder / 'results' / 'events_stats' / f'kdeplot_spindles_pooled.png', bbox_inches = 'tight')
 plt.close()
 
