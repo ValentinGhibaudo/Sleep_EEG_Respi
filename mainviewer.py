@@ -42,8 +42,6 @@ def get_viewer_from_run_key(run_key, parent=None, with_video=False):
     srate = prepros_reref.attrs['srate']
     resp_features = resp_features_job.get(run_key).to_dataframe()
     hypnos = hypnogram_job.get(run_key).to_dataframe()
-    hypnos['time'] = hypnos.index * 30.
-    hypnos['duration'] = 30.
     
     
     spindles = spindles_detect_job.get(run_key).to_dataframe()

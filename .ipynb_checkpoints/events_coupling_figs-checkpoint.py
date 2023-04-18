@@ -87,7 +87,7 @@ def get_angles(ds, pattern):
         angles.extend(list(ds[coord].values))
     return angles
 
-def load_grouped_angles(subject, event, cooccuring, speed, chan):
+def load_grouped_angles(subject, event, cooccuring, speed, chan, half):
 
     """
     High level function that load angles according to arguments and concatenate them if '*' argument
@@ -98,6 +98,7 @@ def load_grouped_angles(subject, event, cooccuring, speed, chan):
     event : 'spindles' or 'slowwaves' for spindles or slow-wave 
     cooccuring : 'cooccur' or 'notcoocur', '*' to concatenate both
     speed : 'SS' or 'FS' for slow or fast spindles, '*' to concatenate both (useful only for spindles)
+    half : 'firsthalf' ot 'secondhalf' of night, '*' to concatenate both
     chan : 'Fz' for example
     """
 
@@ -108,13 +109,24 @@ def load_grouped_angles(subject, event, cooccuring, speed, chan):
         ds_search = event_coupling_job.get(subject)
 
     if event == 'spindles':
-        pattern = f'{subject}_spindles_{cooccuring}_{speed}_{chan}'
+        pattern = f'{subject}_spindles_{cooccuring}_{speed}_{half}_{chan}'
     elif event == 'slowwaves':
-        pattern = f'{subject}_slowwaves_{cooccuring}_{chan}'
+        pattern = f'{subject}_slowwaves_{cooccuring}_{half}_{chan}'
 
     return np.array(get_angles(ds_search, pattern))
 
-def circular_plot_angles(angles, color = None, ax=None, ratio_plot = 0.42, bins = 18, with_rticks = True, with_title = False, with_arrow = True, polar_ticks = 'full'):
+def circular_plot_angles(
+    angles, 
+    color = None, 
+    ax=None, 
+    ratio_plot = 0.42, 
+    bins = 18, 
+    with_rticks = True, 
+    with_title = False, 
+    with_arrow = True, 
+    polar_ticks = 'full',
+    lw = 10):
+
     if ax is None:
         fig, ax = plt.subplots(subplot_kw=dict(projection = 'polar'), constrained_layout = True)
     pval, mu , r, tort_mi, tort_significance = get_circ_features(angles)
@@ -136,13 +148,13 @@ def circular_plot_angles(angles, color = None, ax=None, ratio_plot = 0.42, bins 
     theta_expi = np.arange(ratio_plot * 2*np.pi, 2*np.pi, step)
     for theta, color in zip([theta_inspi, theta_expi],['r','k']):
         r_plot = np.ones(theta.size) * rmax * 1.05
-        ax.plot(theta, r_plot, lw = 8, color =color)
+        ax.plot(theta, r_plot, lw = lw, color =color)
     
     if polar_ticks == 'full':
         ax.set_xticks(np.deg2rad([0, 90 , ratio_plot * 360 , 180 , 270])) # at this angles in degrees, ticks labels will be present
         ax.set_xticklabels(['Start', '90°', 'I>E', '180°','270°']) # labelize polar plot angles
     elif polar_ticks == 'light':
-        ax.set_xticks(np.deg2rad([tick_pos])) # at this angles in degrees, ticks labels will be present
+        ax.set_xticks([ratio_plot * 2*np.pi]) # at this angles in degrees, ticks labels will be present
         ax.set_xticklabels(['I>E']) # labelize polar plot angles
 
     if with_title :
@@ -219,7 +231,7 @@ for chan in chan_loop:
 
         ratio = get_respi_ratio(subject = '*', stage = stage, ratio_df = cycles_ratios)
 
-        angles = load_grouped_angles(subject = '*' , event = ev, cooccuring = '*', speed = '*', chan = chan)
+        angles = load_grouped_angles(subject = '*' , event = ev, cooccuring = '*', speed = '*', chan = chan, half = '*')
 
         color = colors[ev]
         circular_plot_angles(angles, color=color, ax=ax, ratio_plot = ratio, with_title = with_title, with_arrow = True, with_rticks = True)
@@ -261,7 +273,7 @@ for chan in chan_loop:
 
         if ev == 'spindles':
             for speed, speed_title in zip(['SS','FS'],['Slow','Fast']):
-                angles = load_grouped_angles(subject = '*' , event = ev, cooccuring = '*', speed = speed, chan = chan)
+                angles = load_grouped_angles(subject = '*' , event = ev, cooccuring = '*', speed = speed, chan = chan, half = '*')
 
                 if angles.size == 0:
                     continue
@@ -279,7 +291,7 @@ for chan in chan_loop:
 
         elif ev == 'slowwaves':
 
-            angles = load_grouped_angles(subject = '*' , event = ev,cooccuring = '*', speed = speed, chan = chan)
+            angles = load_grouped_angles(subject = '*' , event = ev,cooccuring = '*', speed = speed, chan = chan, half = '*')
 
             if angles.size == 0:
                 continue
@@ -332,9 +344,9 @@ for c, chan in enumerate(chan_loop):
         
         ratio = get_respi_ratio(subject = '*', stage = stage, ratio_df = cycles_ratios)
 
-        angles = load_grouped_angles(subject = '*' , event = load, cooccuring = '*', speed = speed, chan = chan)
+        angles = load_grouped_angles(subject = '*' , event = load, cooccuring = '*', speed = speed, chan = chan, half = '*')
 
-        circular_plot_angles(angles, color=color, ax=ax, ratio_plot = ratio, with_title = with_title, with_arrow = True, with_rticks = False, polar_ticks = 'light')
+        circular_plot_angles(angles, color=color, ax=ax, ratio_plot = ratio, with_title = with_title, with_arrow = True, with_rticks = False, polar_ticks = 'light', lw = 6)
 
         ts_label = timestamps_labels[ev]
 
@@ -361,9 +373,95 @@ for c, chan in enumerate(chan_loop):
     plt.close()
 
 
+# POOLED WITH SPINDLE SPEED and HALF NIGHT QUESTION
+
+pos = {'*_spindles_*_SS_firsthalf_Fz':[0,0],
+       '*_spindles_*_SS_secondhalf_Fz':[1,0],
+       '*_spindles_*_FS_firsthalf_Fz':[0,1],
+       '*_spindles_*_FS_secondhalf_Fz':[1,1],
+       '*_slowwaves_*_firsthalf_Fz':[0,2],
+       '*_slowwaves_*_secondhalf_Fz':[1,2]
+      }
+                    
+color = {'*_spindles_*_SS_firsthalf_Fz':None,
+       '*_spindles_*_SS_secondhalf_Fz':'skyblue',
+       '*_spindles_*_FS_firsthalf_Fz':None,
+       '*_spindles_*_FS_secondhalf_Fz':'skyblue',
+       '*_slowwaves_*_firsthalf_Fz':'forestgreen',
+       '*_slowwaves_*_secondhalf_Fz':'limegreen'
+      }
+
+nrows = 2                     
+ncols = 3
+
+if save_article:
+    chan_loop = ['Fz']
+else:
+    chan_loop = channels_events_select
+    
+for chan in chan_loop:
+    fig, axs = plt.subplots(nrows = nrows, ncols=ncols, figsize = (15,7), constrained_layout = True, subplot_kw=dict(projection = 'polar'))
+
+    for ev in ['spindles','slowwaves']:
+        ev_title = event_types_titles[ev]
+
+        ratio = get_respi_ratio(subject = '*', stage = stage, ratio_df = cycles_ratios)
+        
+        for half, half_title in zip(['firsthalf','secondhalf'],['first half','second half']):
+
+            if ev == 'spindles':
+                for speed, speed_title in zip(['SS','FS'],['Slow','Fast']):
+                    angles = load_grouped_angles(subject = '*' , event = ev, cooccuring = '*', speed = speed, chan = chan, half = half)
+
+                    if angles.size == 0:
+                        continue
+                    
+                    key_plot = f'*_{ev}_*_{speed}_{half}_{chan}'
+                    color_rc = color[key_plot]
+                    pos_rc = pos[key_plot]
+                    
+                    ax = axs[pos_rc[0], pos_rc[1]]
+                    
+                    circular_plot_angles(angles, color=color_rc, ax=ax, ratio_plot = ratio, with_title = with_title, with_arrow = True, with_rticks = True)
+                    ts_label = timestamps_labels[ev]
+                    if save_article:
+                        title = f'{speed_title} {ev} ({half_title}) \n N : {angles.size}'
+                    else:
+                        title = f'{ev} {ts_label} - {speed} - {half_title} \n' + ax.get_title()
+                    ax.set_title(title, fontsize = 15, y = 1.1)  
+
+            elif ev == 'slowwaves':
+
+                angles = load_grouped_angles(subject = '*' , event = ev,cooccuring = '*', speed = speed, chan = chan, half = half)
+
+                if angles.size == 0:
+                    continue
+                
+                key_plot = f'*_{ev}_*_{half}_{chan}'
+                color_rc = color[key_plot]
+                pos_rc = pos[key_plot]
+
+                ax = axs[pos_rc[0], pos_rc[1]]
+
+                circular_plot_angles(angles, color=color_rc, ax=ax, ratio_plot = ratio, with_title = with_title, with_arrow = True, with_rticks = True)
+                ts_label = timestamps_labels[ev]
+                if save_article:
+                    title = f'{event_types_titles[ev]} ({half_title}) \n N : {angles.size}'
+                else:
+                    title = f'{ev} {ts_label} - {speed} - {half_title} \n' + ax.get_title()
+                ax.set_title(title, fontsize = 15, y = 1.1)
+    
+    if save_article:
+        fig.savefig(save_folder / f'polar_plot_pooled_halfnight_{chan}{extension}', dpi = dpis, bbox_inches = 'tight')
+    else:
+        fig.savefig(save_folder / 'global' / f'polar_plot_pooled_halfnight_{chan}{extension}',  dpi = dpis, bbox_inches = 'tight')
+        
+    plt.close()
 
 
-
+    
+    
+    
 # # SUBJECT
 # if not save_article : 
 #     print('FIG by SUBJECT')

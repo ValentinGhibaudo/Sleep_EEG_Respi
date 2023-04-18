@@ -148,6 +148,8 @@ def compute_hypnogram(run_key, **p):
     yasa_hypno_df = pd.DataFrame(columns = ['str','int']) # concat a version with strings labels and with int
     yasa_hypno_df['str'] = yasa_hypno_str
     yasa_hypno_df['int'] = yasa_hypno_int
+    yasa_hypno_df['time'] = yasa_hypno_df.index * 30.
+    yasa_hypno_df['duration'] = 30.
     return xr.Dataset(yasa_hypno_df)
 
 hypnogram_job = jobtools.Job(precomputedir, 'hypnogram', sleep_staging_params, compute_hypnogram)
@@ -238,8 +240,9 @@ def save_useful_outputs(): # save concatenated version of sleep stats and metada
 
 
 def compute_all():
-    jobtools.compute_job_list(metadata_job, run_keys, force_recompute=False, engine='loop')
+    # jobtools.compute_job_list(metadata_job, run_keys, force_recompute=False, engine='loop')
     # jobtools.compute_job_list(preproc_job, run_keys, force_recompute=False, engine='loop')
+    jobtools.compute_job_list(hypnogram_job, run_keys, force_recompute=False, engine='loop')
 
 
 if __name__ == '__main__':
@@ -250,6 +253,6 @@ if __name__ == '__main__':
     # test_compute_spectrogram()
     # test_compute_sleep_stats()
 
-    save_useful_outputs()
+    # save_useful_outputs()
 
-    # compute_all()
+    compute_all()

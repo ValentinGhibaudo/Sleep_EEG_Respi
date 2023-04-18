@@ -59,16 +59,20 @@ def events_to_resp_coupling(run_key, **p):
                     for sp_cooccuring in [True, False]:
 
                         spindles_cooccuring = spindles_speed[spindles_speed['cooccuring'] == sp_cooccuring]
-                        sp_times = spindles_cooccuring[p['timestamps_labels'][event_label]].values
-
+                        
                         if sp_cooccuring:
                             occuring_save_label = 'cooccur'
                         else:
                             occuring_save_label = 'notcooccur'
+                            
+                        for half in ['firsthalf','secondhalf']:
+                            sp_half = spindles_cooccuring[spindles_cooccuring['half_night'] == half]
+                            
+                            sp_times = sp_half[p['timestamps_labels'][event_label]].values
 
-                        if sp_times.size != 0:
-                            phase_angles_rsp = get_phase_angles(rsp_features_of_the_stage, sp_times)
-                            ds[f'{run_key}_{event_label}_{occuring_save_label}_{sp_speed}_{chan}'] = phase_angles_rsp # store angles from the subject & event type in a dataset
+                            if sp_times.size != 0:
+                                phase_angles_rsp = get_phase_angles(rsp_features_of_the_stage, sp_times)
+                                ds[f'{run_key}_{event_label}_{occuring_save_label}_{sp_speed}_{half}_{chan}'] = phase_angles_rsp # store angles from the subject & event type in a dataset
 
 
             elif event_label == 'slowwaves':
@@ -77,15 +81,19 @@ def events_to_resp_coupling(run_key, **p):
 
                     mask_occuring = events_of_chan['cooccuring'] == sp_inside
                     sw_occuring = events_of_chan[mask_occuring]
-                    sw_times = sw_occuring[p['timestamps_labels'][event_label]].values
-
+                    
                     if sp_inside:
                         sp_inside_save_label = 'cooccur'
                     else:
                         sp_inside_save_label = 'notcooccur'
-
-                    phase_angles_rsp = get_phase_angles(rsp_features_of_the_stage, sw_times) # compute phase angles of event for each respi cycle
-                    ds[f'{run_key}_{event_label}_{sp_inside_save_label}_{chan}'] = phase_angles_rsp # store angles from the subject & event type in a dataset
+                        
+                    for half in ['firsthalf','secondhalf']:
+                        sw_half = sw_occuring[sw_occuring['half_night'] == half]
+                        sw_times = sw_half[p['timestamps_labels'][event_label]].values
+                        
+                        if sw_times.size != 0:
+                            phase_angles_rsp = get_phase_angles(rsp_features_of_the_stage, sw_times) # compute phase angles of event for each respi cycle
+                            ds[f'{run_key}_{event_label}_{sp_inside_save_label}_{half}_{chan}'] = phase_angles_rsp # store angles from the subject & event type in a dataset
 
     return ds
 

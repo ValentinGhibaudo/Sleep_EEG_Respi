@@ -5,7 +5,7 @@ import yasa
 from params import *
 from configuration import *
 import jobtools
-from preproc_staging import preproc_job, upsample_hypno_job
+from preproc_staging import preproc_job, upsample_hypno_job, hypnogram_job
 
 # JOB SPINDLES DETECTION
 
@@ -145,11 +145,16 @@ def spindle_tagging(run_key, **p):
     spindles = spindles_detect_job.get(run_key).to_dataframe()
     slowwaves = slowwaves_detect_job.get(run_key).to_dataframe()
     
+    
     sp_cooccuring, sw_cooccuring = cooccuring_sp_sw_df(spindles, slowwaves)
     
     sp_speed = sp_cooccuring.copy()
     sp_speed['Sp_Speed'] = np.nan
     sp_speed.loc[:,'Sp_Speed'] = (sp_speed['Frequency'] >= p['spindles_freq_threshold'][run_key]).map({False:'SS',True:'FS'}) # add a column on spindle df setting if the spindle is a slow or a fast spindle according to the set threshold manually chosen for each subject (bimodal distribution of frequency of spindles)
+    
+    hypno = hypnogram_job.get(run_key).to_dataframe()
+    median_time = hypno['time'].median()
+    sp_speed['half_night'] = sp_speed['Start'].apply(lambda x:'firsthalf' if x < median_time else 'secondhalf')
     
     return xr.Dataset(sp_speed)
 
@@ -165,6 +170,11 @@ def slowwave_tagging(run_key, **p):
     spindles = spindles_detect_job.get(run_key).to_dataframe()
     slowwaves = slowwaves_detect_job.get(run_key).to_dataframe()
     sp_cooccuring, sw_cooccuring = cooccuring_sp_sw_df(spindles, slowwaves)
+    
+    hypno = hypnogram_job.get(run_key).to_dataframe()
+    median_time = hypno['time'].median()
+    sw_cooccuring['half_night'] = sw_cooccuring['Start'].apply(lambda x:'firsthalf' if x < median_time else 'secondhalf')
+    
     return xr.Dataset(sw_cooccuring)
 
 slowwaves_tag_job = jobtools.Job(precomputedir, 'slowwave_tag', slowwaves_tagging_params, slowwave_tagging)
