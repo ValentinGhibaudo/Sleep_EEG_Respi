@@ -42,7 +42,8 @@ def get_angles(ds, pattern):
     return angles
 
 
-def load_grouped_angles(subject, event, cooccuring, speed, chan):
+def load_grouped_angles(subject, event, cooccuring, speed, chan, half):
+
     """
     High level function that load angles according to arguments and concatenate them if '*' argument
 
@@ -52,6 +53,7 @@ def load_grouped_angles(subject, event, cooccuring, speed, chan):
     event : 'spindles' or 'slowwaves' for spindles or slow-wave 
     cooccuring : 'cooccur' or 'notcoocur', '*' to concatenate both
     speed : 'SS' or 'FS' for slow or fast spindles, '*' to concatenate both (useful only for spindles)
+    half : 'firsthalf' ot 'secondhalf' of night, '*' to concatenate both
     chan : 'Fz' for example
     """
 
@@ -60,14 +62,16 @@ def load_grouped_angles(subject, event, cooccuring, speed, chan):
         ds_search = xr.concat(concat, dim = 'subject')
     else:
         ds_search = event_coupling_job.get(subject)
-    
+
     if event == 'spindles':
-        pattern = f'{subject}_spindles_{cooccuring}_{speed}_{chan}'
+        pattern = f'{subject}_spindles_{cooccuring}_{speed}_{half}_{chan}'
     elif event == 'slowwaves':
-        pattern = f'{subject}_slowwaves_{cooccuring}_{chan}'
+        pattern = f'{subject}_slowwaves_{cooccuring}_{half}_{chan}'
 
     return np.array(get_angles(ds_search, pattern))
 
+def readable_pval(pval):
+    return round(pval, 4) if pval >= 0.001 else '< 0.001'
 
 p = events_coupling_stats_params
 save_article = p['save_article']
@@ -80,13 +84,14 @@ if save_article:
 else:
     save_folder = base_folder / 'results' / 'events_coupling_figures'
 
+# STATS SP SW INDIVIDUAL
 rows = []
 for subject in subjects:
     for event_type in ['spindles','slowwaves']:
-        angles = load_grouped_angles(subject = subject , event = event_type, cooccuring = '*', speed = '*', chan = chan)
+        angles = load_grouped_angles(subject = subject , event = event_type, cooccuring = '*', speed = '*', chan = chan, half = '*')
         N = angles.size
         pval, mu, r = get_circ_features(angles)
-        rows.append([subject, event_type, pval, pval_stars(pval), mu, r])
+        rows.append([subject, event_type, readable_pval(pval), pval_stars(pval), mu, r])
 stats = pd.DataFrame(rows, columns = ['Subject','Event','p-Rayleigh','Rayleigh Significance','Mean Direction (°)','Mean Vector Length'])
 
 spindles_stats = stats[stats['Event'] == 'spindles'].set_index('Subject')
@@ -94,30 +99,45 @@ slowwaves_stats = stats[stats['Event'] == 'slowwaves'].set_index('Subject')
 
 concat_events = [spindles_stats,slowwaves_stats]
 stats_return = pd.concat(concat_events, axis = 1)
-stats_return.round(3).reset_index().to_excel(save_folder / 'events_coupling_stats.xlsx', index = False)
+stats_return.round(3).reset_index().to_excel(save_folder / 'circ_stats_spindles_slowwaves_individual.xlsx', index = False)
 
+# STATS SP SPEED POOLED
 rows = []
 for speed in ['SS','FS']:
-    angles = load_grouped_angles(subject = '*' , event = 'spindles', cooccuring = '*', speed = speed, chan = chan)
+    angles = load_grouped_angles(subject = '*' , event = 'spindles', cooccuring = '*', speed = speed, chan = chan, half = '*')
     N = angles.size
     pval, mu, r = get_circ_features(angles)
-    rows.append(['spindles',speed , N  , pval, mu , r])
+    speed_label = 'Slow' if speed == 'SS' else 'Fast'
+    rows.append(['spindles',speed_label , N  , readable_pval(pval), mu , r])
 stats_pooled = pd.DataFrame(rows, columns = ['event','speed','N','p-Rayleigh','Mean Direction (°)','Mean Vector Length'])
-stats_pooled.to_excel(save_folder / 'events_coupling_stats_spindle_speed.xlsx', index = False)
+stats_pooled.to_excel(save_folder / 'circ_stats_spindles_speed_pooled.xlsx', index = False)
+
+# STATS SP SPEED HALF-NIGHT POOLED
+rows = []
+for speed in ['SS','FS']:
+    for half in ['firsthalf','secondhalf']:
+        angles = load_grouped_angles(subject = '*' , event = 'spindles', cooccuring = '*', speed = speed, chan = chan, half = half)
+        N = angles.size
+        pval, mu, r = get_circ_features(angles)
+        speed_label = 'Slow' if speed == 'SS' else 'Fast'
+        rows.append(['spindles',speed_label, half.split('h')[0] , N  , readable_pval(pval), mu , r])
+stats_pooled = pd.DataFrame(rows, columns = ['event','speed','half-night','N','p-Rayleigh','Mean Direction (°)','Mean Vector Length'])
+stats_pooled.to_excel(save_folder / 'circ_stats_spindles_speed_halfnight_pooled.xlsx', index = False)
 
 
+# STATS SP SW POOLED
 rows = []
 for ev in ['spindles','slowwaves']:
-    angles = load_grouped_angles(subject = '*' , event = ev, cooccuring = '*', speed = '*', chan = chan)
+    angles = load_grouped_angles(subject = '*' , event = ev, cooccuring = '*', speed = '*', chan = chan, half = '*')
     N = angles.size
     pval, mu, r = get_circ_features(angles)
-    rows.append([ev, N  , pval, mu , r])
+    rows.append([ev, N  , readable_pval(pval), mu , r])
 stats_pooled = pd.DataFrame(rows, columns = ['event','N','p-Rayleigh','Mean Direction (°)','Mean Vector Length'])
-stats_pooled.to_excel(save_folder / 'events_coupling_stats_spindle_merge.xlsx', index = False)
+stats_pooled.to_excel(save_folder / 'circ_stats_spindles_slowwaves_pooled.xlsx', index = False)
 
 
 
-
+# STATS SP SPEED SW POOLED
 ev_looped = ['Slow spindles','Fast spindles','Slow-Waves']
 ev_load_dict = {'Slow spindles':'spindles_SS','Fast spindles':'spindles_FS','Slow-Waves':'slowwaves'}
 rows = []
@@ -129,17 +149,14 @@ for chan in channels_events_select:
             ev_load = ev_load_dict[ev_clean]
             speed = '--'
 
-        angles = load_grouped_angles(subject = '*' , event = ev_load, cooccuring = '*', speed = speed, chan = chan)
+        angles = load_grouped_angles(subject = '*' , event = ev_load, cooccuring = '*', speed = speed, chan = chan, half = '*')
         N = angles.size
         pval, mu, r = get_circ_features(angles)
         stars = pval_stars(pval)
-        pval_in_list = round(pval, 4)
-        if pval < 0.001:
-            pval_in_list = '< 0.001'
-        row = [chan, ev_clean, N  , pval_in_list, stars, mu , r]
+        row = [chan, ev_clean, N  , readable_pval(pval), stars, mu , r]
         rows.append(row)
 stats_pooled = pd.DataFrame(rows, columns = ['Channel','Event','N','p-Rayleigh','Rayleigh Significance','Mean Direction (°)','Mean Vector Length'])
-stats_pooled.to_excel(save_folder / 'events_coupling_stats_spindle_detailed.xlsx', index = False)
+stats_pooled.to_excel(save_folder / 'circ_stats_spindles_speed_slowwaves_pooled.xlsx', index = False)
 
 
 

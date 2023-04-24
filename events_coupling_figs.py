@@ -23,7 +23,7 @@ save_article = p['save_article']
 if save_article:
     save_folder = article_folder 
     extension = '.tif'
-    dpis = 150
+    dpis = 300
     with_title = False
     print('SAVING FIGURES IN ARTICLE FOLDER')
 else:
@@ -243,9 +243,9 @@ for chan in chan_loop:
         ax.set_title(title, fontsize = 15, y = 1.1)  
 
     if save_article:
-        fig.savefig(save_folder / f'polar_plot_pooled_{chan}_merge_speed{extension}', dpi = dpis, bbox_inches = 'tight')
+        fig.savefig(save_folder / f'polar_plot_pooled_{chan}{extension}', dpi = dpis, bbox_inches = 'tight')
     else:
-        fig.savefig(save_folder / 'global' / f'polar_plot_pooled_{chan}_merge_speed{extension}', dpi = dpis, bbox_inches = 'tight')
+        fig.savefig(save_folder / 'global' / f'polar_plot_pooled_{chan}{extension}', dpi = dpis, bbox_inches = 'tight')
     plt.close()
 
 
@@ -309,9 +309,9 @@ for chan in chan_loop:
             ax.set_title(title, fontsize = 15, y = 1.1)
     
     if save_article:
-        fig.savefig(save_folder / f'polar_plot_pooled_{chan}{extension}', dpi = dpis, bbox_inches = 'tight')
+        fig.savefig(save_folder / f'polar_plot_pooled_speed_{chan}{extension}', dpi = dpis, bbox_inches = 'tight')
     else:
-        fig.savefig(save_folder / 'global' / f'polar_plot_pooled_{chan}{extension}',  dpi = dpis, bbox_inches = 'tight')
+        fig.savefig(save_folder / 'global' / f'polar_plot_pooled_speed_{chan}{extension}',  dpi = dpis, bbox_inches = 'tight')
         
     plt.close()
 
@@ -366,9 +366,9 @@ for c, chan in enumerate(chan_loop):
 
     
     if save_article:
-        fig.savefig(save_folder / f'polar_plot_pooled_all_chans{extension}', dpi = dpis, bbox_inches = 'tight')
+        fig.savefig(save_folder / f'polar_plot_pooled_speed_all_chans{extension}', dpi = dpis, bbox_inches = 'tight')
     else:
-        fig.savefig(save_folder / 'global' / f'polar_plot_pooled_all_chans{extension}',  dpi = dpis, bbox_inches = 'tight')
+        fig.savefig(save_folder / 'global' / f'polar_plot_pooled_speed_all_chans{extension}',  dpi = dpis, bbox_inches = 'tight')
         
     plt.close()
 
@@ -452,9 +452,9 @@ for chan in chan_loop:
                 ax.set_title(title, fontsize = 15, y = 1.1)
     
     if save_article:
-        fig.savefig(save_folder / f'polar_plot_pooled_halfnight_{chan}{extension}', dpi = dpis, bbox_inches = 'tight')
+        fig.savefig(save_folder / f'polar_plot_pooled_speed_halfnight_{chan}{extension}', dpi = dpis, bbox_inches = 'tight')
     else:
-        fig.savefig(save_folder / 'global' / f'polar_plot_pooled_halfnight_{chan}{extension}',  dpi = dpis, bbox_inches = 'tight')
+        fig.savefig(save_folder / 'global' / f'polar_plot_pooled_speed_halfnight_{chan}{extension}',  dpi = dpis, bbox_inches = 'tight')
         
     plt.close()
 
@@ -462,44 +462,51 @@ for chan in chan_loop:
     
     
     
-# # SUBJECT
-# if not save_article : 
-#     print('FIG by SUBJECT')
-#     colors = {'spindles':None , 'slowwaves':'forestgreen'}
+# SUBJECT
+if save_article:
+    chan_loop = ['Fz']
+else:
+    chan_loop = channels_events_select
+    
+print('FIG by SUBJECT')
+colors = {'spindles':None , 'slowwaves':'forestgreen'}
 
-#     for chan in chan_loop:
-#         for event_type in ['spindles','slowwaves']:
-#             ts_label = timestamps_labels[ev]
-#             color = colors[event_type]
+for chan in chan_loop:
+    for event_type in ['spindles','slowwaves']:
+        ts_label = timestamps_labels[ev]
+        color = colors[event_type]
 
-#             nrows = 4
-#             ncols = 5
+        nrows = 4
+        ncols = 5
 
-#             subjects_array = np.array(run_keys).reshape(nrows, ncols)
-#             fig, axs = plt.subplots(nrows, ncols, figsize = (20,20), constrained_layout = True, subplot_kw=dict(projection = 'polar'))
+        subjects_array = np.array(run_keys).reshape(nrows, ncols)
+        fig, axs = plt.subplots(nrows, ncols, figsize = (20,20), constrained_layout = True, subplot_kw=dict(projection = 'polar'))
+        
+        if not save_article:
+            fig.suptitle(f'{event_type} {ts_label} polar distributions along respiration phase')
 
-#             fig.suptitle(f'{event_type} {ts_label} polar distributions along respiration phase')
+        for r in range(nrows):
+            for c in range(ncols):
+                ax = axs[r,c]
+                subject = subjects_array[r,c]
 
-#             for r in range(nrows):
-#                 for c in range(ncols):
-#                     ax = axs[r,c]
-#                     subject = subjects_array[r,c]
+                ratio = get_respi_ratio(subject = subject, stage = stage, ratio_df = cycles_ratios)
 
-#                     ratio = get_respi_ratio(subject = subject, stage = stage, ratio_df = cycles_ratios)
+                angles = load_grouped_angles(subject = subject , event = event_type, cooccuring = '*', speed = '*', chan = chan, half = '*')
 
-#                     angles = load_grouped_angles(subject = subject , event = event_type, cooccuring = '*', speed = '*', chan = chan)
+                if angles.size == 0:
+                    continue 
 
-#                     if angles.size == 0:
-#                         continue 
-
-#                     circular_plot_angles(angles, color=color, ax=ax, ratio_plot = ratio, with_title = False, with_arrow = True, with_rticks = True)
-#                     title = f'{subject} - N : {angles.size}'
-#                     ax.set_title(title)  
-
-
-#             fig.savefig(save_folder / 'subjects' / f'polar_plot_pooled_{chan}_{event_type}{extension}',  dpi = dpis, bbox_inches = 'tight')
-
-#             plt.close()
+                circular_plot_angles(angles, color=color, ax=ax, ratio_plot = ratio, with_title = False, with_arrow = True, with_rticks = True)
+                title = f'{subject} - N : {angles.size}'
+                ax.set_title(title)  
+                
+        if not save_article:
+            fig.savefig(save_folder / 'subjects' / f'polar_plot_individual_{chan}_{event_type}{extension}',  dpi = dpis, bbox_inches = 'tight')
+        else:
+            fig.savefig(save_folder / f'polar_plot_individual_{chan}_{event_type}{extension}',  dpi = dpis, bbox_inches = 'tight')
+            
+        plt.close()
 
 print('SUCCESS')
     

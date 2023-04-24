@@ -3,7 +3,7 @@ import seaborn as sns
 import numpy as np
 import matplotlib.pyplot as plt
 from params import *
-from configuration import base_folder
+from configuration import *
 from detect_sleep_events import spindles_tag_job, slowwaves_tag_job
 from preproc_staging import sleep_stats_job
 
@@ -22,7 +22,10 @@ for ev in event_labels:
     df = events_df[ev]
     mean = df.mean().rename('mean').to_frame().T
     sd = df.std().rename('sd').to_frame().T
-    pd.concat([mean,sd], axis =0).to_excel(base_folder / 'results' / 'events_stats' / f'{ev}_mean_sd_features.xlsx')
+    if not p['save_article']:
+        pd.concat([mean,sd], axis =0).to_excel(base_folder / 'results' / 'events_stats' / f'{ev}_mean_sd_features.xlsx')
+    else:
+        pd.concat([mean,sd], axis =0).to_excel(article_folder / f'{ev}_mean_sd_features.xlsx')
 
 
 # FIG : BARPLOT OF PROPORTION OF EVENTS IN CHANNELS 
@@ -88,7 +91,8 @@ for r in range(nrows):
 fig.savefig(base_folder / 'results' / 'events_stats' / 'speed_spindles.png', bbox_inches = 'tight')  
 plt.close()
 
-
+# FIG : SPEED SPINDLES INDIVIDUAL
+print('FIG : SPEED SPINDLES INDIVIDUAL')
 nrows = 4
 ncols = 5
 chan_sel = p['chan']
@@ -160,8 +164,11 @@ for event_label in event_labels:
             rows.append(row)
                     
 df_density = pd.DataFrame(rows, columns = ['event','subject','stage','stage_duration','chan','N','Density'])
-df_density.to_excel(base_folder / 'results' / 'events_stats' / 'density.xlsx')
-
+if not p['save_article']:
+    df_density.to_excel(base_folder / 'results' / 'events_stats' / 'density.xlsx')
+else:
+    df_density.to_excel(article_folder / 'density.xlsx')
+    pd.concat([df_density.groupby('event').mean(numeric_only = True).reset_index(), df_density.groupby('event').std(numeric_only = True).reset_index()]).to_excel(article_folder / 'density_mean_sd.xlsx')
 
 nrows = len(run_keys)
 fig, axs = plt.subplots(nrows, figsize = (20,30), constrained_layout = True)
@@ -192,12 +199,20 @@ for event_label in event_labels:
             rows.append(row)
                     
 df_count_chan = pd.DataFrame(rows, columns = ['event','subject','stage','chan','N'])
-df_count_chan.to_excel(base_folder / 'results' / 'events_stats' / 'count_events_chan.xlsx')
+if not p['save_article']:
+    df_count_chan.to_excel(base_folder / 'results' / 'events_stats' / 'count_events_chan.xlsx')
+else:
+    df_count_chan.to_excel(article_folder / 'count_events_chan.xlsx')
 
 df_count = df_count_chan.groupby(['event','subject','stage']).sum(numeric_only = True)
-df_count.to_excel(base_folder / 'results' / 'events_stats' / 'count_events.xlsx')
-df_count.groupby('event').mean(numeric_only = True).to_excel(base_folder / 'results' / 'events_stats' / 'count_events_mean.xlsx')
-df_count.groupby('event').std(numeric_only = True).to_excel(base_folder / 'results' / 'events_stats' / 'count_events_sd.xlsx')
+if not p['save_article']:
+    df_count.to_excel(base_folder / 'results' / 'events_stats' / 'count_events.xlsx')
+    df_count.groupby('event').mean(numeric_only = True).to_excel(base_folder / 'results' / 'events_stats' / 'count_events_mean.xlsx')
+    df_count.groupby('event').std(numeric_only = True).to_excel(base_folder / 'results' / 'events_stats' / 'count_events_sd.xlsx')
+else:
+    df_count.to_excel(article_folder / 'count_events.xlsx')
+    df_count.groupby('event').mean(numeric_only = True).to_excel(article_folder  / 'count_events_mean.xlsx')
+    df_count.groupby('event').std(numeric_only = True).to_excel(article_folder  / 'count_events_sd.xlsx')
 
 
 # DISTRIBUTIONS OF FREQ OF SPINDLES
@@ -310,7 +325,10 @@ sns.kdeplot(data = events_df['spindles'], x = 'Frequency' , hue = 'Channel', ax=
 mean_freq_tresh = np.mean(np.array([spindles_freq_threshold[run_key] for run_key in run_keys]))
 ax.axvline(x = mean_freq_tresh, color = 'k')
 # ax.set_title(f'Spindles frequency pooled (mean thresh : {round(mean_freq_tresh, 2)} Hz)')
-fig.savefig(base_folder / 'results' / 'events_stats' / f'kdeplot_spindles_pooled.png', bbox_inches = 'tight')
+if not p['save_article']:
+    fig.savefig(base_folder / 'results' / 'events_stats' / f'kdeplot_spindles_pooled.png', bbox_inches = 'tight')
+else:
+    fig.savefig(article_folder / f'kdeplot_spindles_pooled.tif', dpi = 300, bbox_inches = 'tight')
 plt.close()
 
 

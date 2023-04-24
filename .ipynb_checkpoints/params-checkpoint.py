@@ -114,6 +114,7 @@ events_stats_params = {
     'chan':compute_chan,
     'interesting_variables':{'spindles':['Duration','Amplitude','RMS','AbsPower','RelPower','Frequency','Oscillations','Symmetry'],
                              'slowwaves':['Duration','ValNegPeak','ValPosPeak','PTP','Slope','Frequency']},
+    'save_article':True
 }
 
 resp_params = {
