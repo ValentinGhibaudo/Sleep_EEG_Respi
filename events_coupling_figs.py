@@ -499,7 +499,7 @@ for chan in chan_loop:
 
                 circular_plot_angles(angles, color=color, ax=ax, ratio_plot = ratio, with_title = False, with_arrow = True, with_rticks = True)
                 title = f'{subject} - N : {angles.size}'
-                ax.set_title(title)  
+                ax.set_title(title, fontsize = 20)  
                 
         if not save_article:
             fig.savefig(save_folder / 'subjects' / f'polar_plot_individual_{chan}_{event_type}{extension}',  dpi = dpis, bbox_inches = 'tight')

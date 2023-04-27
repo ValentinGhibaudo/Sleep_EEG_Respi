@@ -112,17 +112,27 @@ for speed in ['SS','FS']:
 stats_pooled = pd.DataFrame(rows, columns = ['event','speed','N','p-Rayleigh','Mean Direction (°)','Mean Vector Length'])
 stats_pooled.to_excel(save_folder / 'circ_stats_spindles_speed_pooled.xlsx', index = False)
 
-# STATS SP SPEED HALF-NIGHT POOLED
+
+# STATS SP and SW SPEED HALF-NIGHT POOLED
+ev_looped = ['Slow spindles','Fast spindles','Slow-Waves']
+ev_load_dict = {'Slow spindles':'spindles_SS','Fast spindles':'spindles_FS','Slow-Waves':'slowwaves'}
 rows = []
-for speed in ['SS','FS']:
-    for half in ['firsthalf','secondhalf']:
-        angles = load_grouped_angles(subject = '*' , event = 'spindles', cooccuring = '*', speed = speed, chan = chan, half = half)
+for half in ['firsthalf','secondhalf']:
+    for ev_clean in ev_looped:
+        if not ev_clean == 'Slow-Waves':
+            ev_load, speed = ev_load_dict[ev_clean].split('_')
+        else:
+            ev_load = ev_load_dict[ev_clean]
+            speed = 'NA'
+
+        angles = load_grouped_angles(subject = '*' , event = ev_load, cooccuring = '*', speed = speed, chan = chan, half = half)
         N = angles.size
         pval, mu, r = get_circ_features(angles)
-        speed_label = 'Slow' if speed == 'SS' else 'Fast'
-        rows.append(['spindles',speed_label, half.split('h')[0] , N  , readable_pval(pval), mu , r])
-stats_pooled = pd.DataFrame(rows, columns = ['event','speed','half-night','N','p-Rayleigh','Mean Direction (°)','Mean Vector Length'])
-stats_pooled.to_excel(save_folder / 'circ_stats_spindles_speed_halfnight_pooled.xlsx', index = False)
+        stars = pval_stars(pval)
+        row = [ev_clean, half.split('h')[0] , N  , readable_pval(pval), stars, mu , r]
+        rows.append(row)
+stats_pooled = pd.DataFrame(rows, columns = ['Event','Half-Night','N','p-Rayleigh','Significance','Angle','MVL'])
+stats_pooled.to_excel(save_folder / 'circ_stats_events_speed_halfnight_pooled.xlsx', index = False)
 
 
 # STATS SP SW POOLED

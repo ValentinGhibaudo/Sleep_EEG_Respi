@@ -196,9 +196,9 @@ def test_compute_sigma_coupling():
 
 def compute_all():
     # jobtools.compute_job_list(sigma_power_job, run_keys, force_recompute=False, engine='loop')
-    # jobtools.compute_job_list(sigma_power_job, run_keys, force_recompute=False, engine='joblib', n_jobs = 2)
+    jobtools.compute_job_list(sigma_power_job, run_keys, force_recompute=True, engine='joblib', n_jobs = 2)
 
-    jobtools.compute_job_list(sigma_coupling_job, run_keys, force_recompute=False, engine='loop')
+    # jobtools.compute_job_list(sigma_coupling_job, run_keys, force_recompute=False, engine='loop')
     # jobtools.compute_job_list(sigma_coupling_job, run_keys, force_recompute=False, engine='joblib', n_jobs = 2)
 
 if __name__ == '__main__':
