@@ -23,7 +23,7 @@ save_article = sigma_coupling_figs_params['save_article']
 if save_article:
     save_folder = article_folder 
     fig_format = '.tif'
-    dpis = 150
+    dpis = 300
 else:
     save_folder = base_folder / 'results' / 'sigma_coupling_figures'
     fig_format = '.png'

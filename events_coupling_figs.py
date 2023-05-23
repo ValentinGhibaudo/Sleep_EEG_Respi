@@ -256,7 +256,7 @@ dict_figure = {
     'slowwaves':{'pos':2, 'color':'forestgreen'},
 }
 
-ncols = 3
+ncols = 2
 
 if save_article:
     chan_loop = ['Fz']
@@ -266,7 +266,7 @@ else:
 for chan in chan_loop:
     fig, axs = plt.subplots(ncols=ncols, figsize = (15,7), constrained_layout = True, subplot_kw=dict(projection = 'polar'))
 
-    for ev in ['spindles','slowwaves']:
+    for ev in ['spindles']:
         ev_title = event_types_titles[ev]
 
         ratio = get_respi_ratio(subject = '*', stage = stage, ratio_df = cycles_ratios)
