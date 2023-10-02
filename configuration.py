@@ -15,7 +15,6 @@ elif getpass.getuser() == 'valentin' and  sys.platform.startswith('linux'):
 elif getpass.getuser() == 'valentin.ghibaudo' and  sys.platform.startswith('linux'):
     base_folder = '/crnldata/cmo/Projets/Autre//NBuonviso2022_Sleep_EEG_Respi_Valentin/'
 
-
 elif sys.platform.startswith('win'):
 	base_folder = 'N:/cmo/Projets/Autre//NBuonviso2022_Sleep_EEG_Respi_Valentin/'
 
