@@ -21,13 +21,14 @@ fig_global_cycle_type = sigma_coupling_figs_params['fig_global_cycle_type']
 save_article = sigma_coupling_figs_params['save_article']
 
 if save_article:
-    save_folder = article_folder 
+    # save_folder = article_folder 
+    save_folder = base_folder / 'results' / 'sigma_coupling_figures'
     fig_format = '.tif'
     dpis = 300
 else:
     save_folder = base_folder / 'results' / 'sigma_coupling_figures'
-    fig_format = '.png'
-    dpis = 100
+    fig_format = '.tif'
+    dpis = 300
 
 concat_phase_freqs = []
 concat_Ns = []
@@ -54,9 +55,9 @@ cycle_types = mean_phase_freqs.coords['cycle_type'].values
 
 if not save_article:
     for subject in run_keys:
-
+        subject_title = 'P{}'.format(subject.split('S')[1])
         fig, axs = plt.subplots(ncols = cycle_types.size, sharex = True, sharey = True, constrained_layout = True, figsize = (20,4))
-        fig.suptitle(f'{subject} - {sigma_coupling_chan}', fontsize = 20)
+        fig.suptitle(f'{subject_title} - {sigma_coupling_chan}', fontsize = 20)
 
         for col, cycle_type in enumerate(cycle_types):
 
@@ -66,18 +67,19 @@ if not save_article:
             # print(points.shape, freqs.shape, data.shape)
             im = ax.pcolormesh(points, freqs, data)
             ax.axvline(x = transition_ratio, color = 'r')
-            ax.set_title(f'{subject} - {cycle_type} - N = {N}')
+            
+            ax.set_title(f'{subject_title} - {cycle_type} - N = {N}')
             if col == 0:
                 ax.set_ylabel('Freq [Hz]')
             ax.set_xlabel('Phase')
             ax.set_xticks([0, 0, transition_ratio, 1])
-            ax.set_xticklabels([0, 0, 'inspi-expi', '2*Pi'], rotation=45, fontsize=10)
+            ax.set_xticklabels([0, 0, 'inspi-expi', '360°'], rotation=45, fontsize=10)
             # if col == cycle_types.size - 1:
             #     plt.colorbar(im, ax = axs[col], label = 'Power in µV**2')
             # else:
             #     plt.colorbar(im, ax = axs[col])
-
-        fig.savefig(save_folder / f'{subject}_phase_freq{fig_format}', bbox_inches = 'tight', dpi = dpis)
+            
+        fig.savefig(save_folder / f'{subject_title}_phase_freq{fig_format}', bbox_inches = 'tight', dpi = dpis)
         plt.close()
 
 
@@ -87,30 +89,32 @@ subject_array = np.array(run_keys).reshape(4,5)
 nrows = subject_array.shape[0]
 ncols = subject_array.shape[1]
 
+for chan in channels_events_select:
+    fig, axs = plt.subplots(nrows = nrows, ncols = ncols, figsize = (20,10), sharex = True, sharey = True, constrained_layout = True)
+    if not save_article:
+        fig.suptitle(f'{chan} sigma power during respiration cycle by subject ({fig_global_cycle_type} cycles mode)', fontsize = 20, y = 1.05)
+    else:
+        fig.suptitle(f'{chan}', fontsize = 20, y = 1.05)
+    for r in range(nrows):
+        for c in range(ncols):
+            ax = axs[r,c]
+            subject = subject_array[r,c]
+            data = mean_phase_freqs.loc[subject, fig_global_cycle_type,chan,:,:].data.T
 
-fig, axs = plt.subplots(nrows = nrows, ncols = ncols, figsize = (20,10), sharex = True, sharey = True, constrained_layout = True)
-if not save_article:
-    fig.suptitle(f'{sigma_coupling_chan} sigma power during respiration cycle by subject ({fig_global_cycle_type} cycles mode)', fontsize = 20, y = 1.05)
-for r in range(nrows):
-    for c in range(ncols):
-        ax = axs[r,c]
-        subject = subject_array[r,c]
-        data = mean_phase_freqs.loc[subject, fig_global_cycle_type,sigma_coupling_chan,:,:].data.T
+            im = ax.pcolormesh(points, freqs, data)
+            ax.axvline(x = transition_ratio, color = 'r')
+            ax.set_title(subject)
+            if c == 0:
+                ax.set_ylabel('Freq [Hz]')
+            if r == nrows-1:
+                ax.set_xlabel('Phase')
+                ax.set_xticks([0, 0, transition_ratio, 1])
+                ax.set_xticklabels([0, 0, 'inspi-expi', '360°'], rotation=45, fontsize=10)
 
-        im = ax.pcolormesh(points, freqs, data)
-        ax.axvline(x = transition_ratio, color = 'r')
-        ax.set_title(subject)
-        if c == 0:
-            ax.set_ylabel('Freq [Hz]')
-        if r == nrows-1:
-            ax.set_xlabel('Phase')
-            ax.set_xticks([0, 0, transition_ratio, 1])
-            ax.set_xticklabels([0, 0, 'inspi-expi', '2*Pi'], rotation=45, fontsize=10)
+            plt.colorbar(im, ax = ax, label = 'Power in µV**2')
 
-        plt.colorbar(im, ax = ax, label = 'Power in µV**2')
-
-fig.savefig(save_folder / f'mean_phase_freq_subjects_detailed{fig_format}', bbox_inches = 'tight', dpi = dpis)
-plt.close()
+    fig.savefig(save_folder / f'mean_phase_freq_subjects_detailed_{chan}{fig_format}', bbox_inches = 'tight', dpi = dpis)
+    plt.close()
 
 
 # ## 3th FIGURE - Mean across subjects of the phase-freq matrix of set cycles types and channel
@@ -143,7 +147,7 @@ for ax, chan in zip(axs.flat, channels_events_select):
     ax.set_ylabel('Freq [Hz]')
     # ax.set_xlabel('Respiration phase')
     ax.set_xticks([ 0, transition_ratio, 1])
-    ax.set_xticklabels([ 0, 'inspi-expi', '2*Pi'],fontsize=10)
+    ax.set_xticklabels([ 0, 'inspi-expi', '360°'],fontsize=10)
     ax.set_title(chan)
 
 ax_x_start = 1.02

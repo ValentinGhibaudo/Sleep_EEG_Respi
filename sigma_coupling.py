@@ -117,13 +117,16 @@ def compute_sigma_coupling(run_key, **p):
     morlet_sigma = sigma_power_job.get(run_key)['sigma_power'] # lazy load time_frequency sigma map (chan * freq * time)
     rsp_features = resp_tag_job.get(run_key).to_dataframe() # load respi times
 
-    mask_stages = rsp_features['sleep_stage'] == p['stage'] # select only sigma extracted during the stages from list "stages_sigma_select"
+    mask_stages = rsp_features['sleep_stage'].isin(p['stage']) # select only sigma extracted during the stages from list "stages_sigma_select"
     rsp_features = rsp_features[mask_stages].reset_index(drop=True)
     rsp_features_nan = add_nan_where_cleaned_cycle(rsp_features) # add nan where cycles should not be deformed because too long because of lacking because of cleaning
     
     phase_freq_sigma = None
 
-    for channel in p['chans']: # cut chan list in two part to not overload memory
+    chan_loop = p['chans']
+
+    for channel in chan_loop: # loop over channels
+        print(channel)
         data = morlet_sigma.sel(chan = channel).data.T # from chan * freq * time to time * freq * chan
         # stretch and slice phase-freq maps
         clipped_times, times_to_cycles, cycles, cycle_points, deformed_data = deform_to_cycle_template(data = data, # 0 axis = time, 1 axis = freq
@@ -146,19 +149,20 @@ def compute_sigma_coupling(run_key, **p):
         
     resp_features_stretched = rsp_features_nan.iloc[cycles,:] # resp features are masked to the true computed cycles in deform_to_cycle_template
 
-    c_spindled = resp_features_stretched[resp_features_stretched['Spindle_Tag'] == 1].index.to_numpy()
-    c_unspindled = resp_features_stretched[(resp_features_stretched['Spindle_Tag'] == 0) & (resp_features_stretched['sleep_stage'] == p['stage'])].index.to_numpy()
-    c_N2 = resp_features_stretched[resp_features_stretched['sleep_stage'] == p['stage']].index.to_numpy()
+    c_spindled = resp_features_stretched[(resp_features_stretched['Spindle_Tag'] == 1) & (resp_features_stretched['sleep_stage'].isin(p['stage']))].index.to_numpy()
+    c_unspindled = resp_features_stretched[(resp_features_stretched['Spindle_Tag'] == 0) & (resp_features_stretched['sleep_stage'].isin(p['stage']))].index.to_numpy()
+    c_N2 = resp_features_stretched[resp_features_stretched['sleep_stage'] == 'N2'].index.to_numpy()
+    c_N3 = resp_features_stretched[resp_features_stretched['sleep_stage'] == 'N3'].index.to_numpy()
     c_all = resp_features_stretched.dropna().index.to_numpy()
     
 
     N_cycle_averaged = []
 
-    c_labels = ['all','spindled','unspindled','N2','diff']
+    c_labels = ['all','spindled','unspindled','N2','N3','diff']
 
     da_mean = None
 
-    for c_label, c_type in zip(c_labels,[c_all, c_spindled, c_unspindled, c_N2,'diff']):
+    for c_label, c_type in zip(c_labels,[c_all, c_spindled, c_unspindled, c_N2,c_N3,'diff']):
         if c_label == 'diff':
             N_cycle_averaged.append(0)
             phase_freq_mean = phase_freq_sigma.sel(cycle = c_spindled).mean('cycle') - phase_freq_sigma.sel(cycle = c_unspindled).mean('cycle')
@@ -196,10 +200,20 @@ def test_compute_sigma_coupling():
 
 def compute_all():
     # jobtools.compute_job_list(sigma_power_job, run_keys, force_recompute=False, engine='loop')
-    jobtools.compute_job_list(sigma_power_job, run_keys, force_recompute=True, engine='joblib', n_jobs = 2)
+    # jobtools.compute_job_list(sigma_power_job, run_keys, force_recompute=True, engine='joblib', n_jobs = 2)
+
+    # jobtools.compute_job_list(sigma_power_job, [(sub,) for sub in run_keys], force_recompute=True, engine='slurm',
+    #                           slurm_params={'cpus-per-task':'4', 'mem':'20G', },
+    #                           module_name='sigma_coupling',
+    #                           )
 
     # jobtools.compute_job_list(sigma_coupling_job, run_keys, force_recompute=False, engine='loop')
     # jobtools.compute_job_list(sigma_coupling_job, run_keys, force_recompute=False, engine='joblib', n_jobs = 2)
+
+    jobtools.compute_job_list(sigma_coupling_job, [(sub,) for sub in run_keys], force_recompute=True, engine='slurm',
+                              slurm_params={'cpus-per-task':'4', 'mem':'20G', },
+                              module_name='sigma_coupling',
+                              )
 
 if __name__ == '__main__':
     # test_compute_sigma_power()

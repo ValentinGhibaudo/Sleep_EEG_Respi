@@ -53,7 +53,7 @@ def load_grouped_angles(subject, event, cooccuring, speed, chan, half):
     event : 'spindles' or 'slowwaves' for spindles or slow-wave 
     cooccuring : 'cooccur' or 'notcoocur', '*' to concatenate both
     speed : 'SS' or 'FS' for slow or fast spindles, '*' to concatenate both (useful only for spindles)
-    half : 'firsthalf' ot 'secondhalf' of night, '*' to concatenate both
+    half : 'q1', 'q2','q3','q4', of night, '*' to concatenate all
     chan : 'Fz' for example
     """
 

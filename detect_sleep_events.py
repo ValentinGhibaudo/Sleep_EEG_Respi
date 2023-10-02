@@ -153,9 +153,27 @@ def spindle_tagging(run_key, **p):
     sp_speed.loc[:,'Sp_Speed'] = (sp_speed['Frequency'] >= p['spindles_freq_threshold'][run_key]).map({False:'SS',True:'FS'}) # add a column on spindle df setting if the spindle is a slow or a fast spindle according to the set threshold manually chosen for each subject (bimodal distribution of frequency of spindles)
     
     hypno = hypnogram_job.get(run_key).to_dataframe()
+
+    q1 = hypno['time'].quantile(0.25)
     median_time = hypno['time'].median()
-    sp_speed['half_night'] = sp_speed['Start'].apply(lambda x:'firsthalf' if x < median_time else 'secondhalf')
-    
+    q3 = hypno['time'].quantile(0.75)
+
+    sp_speed['night_quartile'] = np.nan
+
+    ev_label = timestamps_labels['spindles']
+
+    for i, row in sp_speed.iterrows():
+        if row[ev_label] <= q1:
+            sp_speed.loc[i,'night_quartile'] = 'q1'
+        elif row[ev_label] > q1 and row[ev_label] <= median_time:
+            sp_speed.loc[i,'night_quartile'] = 'q2'
+        elif row[ev_label] > median_time and row[ev_label] <= q3:
+            sp_speed.loc[i,'night_quartile'] = 'q3'
+        elif row[ev_label] > q3:
+            sp_speed.loc[i,'night_quartile'] = 'q4'
+
+    sp_speed['cooccuring'] = sp_speed['cooccuring'].map({False:0,True:1})
+
     return xr.Dataset(sp_speed)
 
 spindles_tag_job = jobtools.Job(precomputedir, 'spindle_tag', spindles_tagging_params, spindle_tagging)
@@ -172,9 +190,27 @@ def slowwave_tagging(run_key, **p):
     sp_cooccuring, sw_cooccuring = cooccuring_sp_sw_df(spindles, slowwaves)
     
     hypno = hypnogram_job.get(run_key).to_dataframe()
+
+    q1 = hypno['time'].quantile(0.25)
     median_time = hypno['time'].median()
-    sw_cooccuring['half_night'] = sw_cooccuring['Start'].apply(lambda x:'firsthalf' if x < median_time else 'secondhalf')
-    
+    q3 = hypno['time'].quantile(0.75)
+
+    sw_cooccuring['night_quartile'] = None
+
+    ev_label = timestamps_labels['spindles']
+
+    for i, row in sw_cooccuring.iterrows():
+        if row[ev_label] <= q1:
+            sw_cooccuring.loc[i,'night_quartile'] = 'q1'
+        elif row[ev_label] > q1 and row[ev_label] <= median_time:
+            sw_cooccuring.loc[i,'night_quartile'] = 'q2'
+        elif row[ev_label] > median_time and row[ev_label] <= q3:
+            sw_cooccuring.loc[i,'night_quartile'] = 'q3'
+        elif row[ev_label] > q3:
+            sw_cooccuring.loc[i,'night_quartile'] = 'q4'
+
+    sw_cooccuring['cooccuring'] = sw_cooccuring['cooccuring'].map({False:0,True:1})
+
     return xr.Dataset(sw_cooccuring)
 
 slowwaves_tag_job = jobtools.Job(precomputedir, 'slowwave_tag', slowwaves_tagging_params, slowwave_tagging)
@@ -198,8 +234,8 @@ def compute_all():
     # jobtools.compute_job_list(slowwaves_detect_job, run_keys, force_recompute=False, engine='loop')
     # jobtools.compute_job_list(slowwaves_detect_job, run_keys, force_recompute=False, engine='joblib', n_jobs = 5)
 
-    # jobtools.compute_job_list(spindles_tag_job, run_keys, force_recompute=False, engine='loop')
-    jobtools.compute_job_list(slowwaves_tag_job, run_keys, force_recompute=False, engine='loop')
+    jobtools.compute_job_list(spindles_tag_job, run_keys, force_recompute=True, engine='loop')
+    jobtools.compute_job_list(slowwaves_tag_job, run_keys, force_recompute=True, engine='loop')
 
 
 if __name__ == '__main__':

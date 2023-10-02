@@ -11,7 +11,7 @@ mapper_int_to_stage = {0:'W',1:'N1',2:'N2',3:'N3',4:'R'} # encoding of int stage
 chans_events_detect = ['Fp2','Fp1','Fz','C4','C3','Cz','T4','T3','Pz','O1','O2'] # where spindles and slowwaves are detected by yasa
 include_stages = (2) # stages when spindles and slowwaves are detected
 remove_outliers = False  # remove or not outliers of detection by YASA using sklearn.ensemble.IsolationForest.
-compute_stage = 'N2'
+compute_stage = ['N2','N3']
 compute_chan = 'Fz'
 timestamps_labels = {'spindles':'Start','slowwaves':'NegPeak'} # labels = colnames of the yasa detection output
 channels_events_select =  ['Fp2','Fp1','Fz','C4','C3','Cz','T4','T3','Pz','O1','O2'] # only events detected in these channels are used for computing
@@ -148,20 +148,24 @@ events_coupling_params = {
     'resp_tag_params':resp_tag_params,
     'chans':chans_events_detect,
     'stage':compute_stage,
-    'timestamps_labels':timestamps_labels # timestamp label of the event that will be considered for tagging of respi cycles
+    'timestamps_labels':{'Spindles':timestamps_labels['spindles'] , 'SlowWaves':timestamps_labels['slowwaves']} # timestamp label of the event that will be considered for tagging of respi cycles
 }
 
 events_coupling_stats_params = {
     'events_coupling_params':events_coupling_params,
     'stage':compute_stage,
     'chan':compute_chan,
-    'save_article':True # will save outputs in article folder if True
+    'save_article':False # will save outputs in article folder if True
 }
 
 events_coupling_figs_params = {
     'events_coupling_params':events_coupling_params,
     'stage':compute_stage,
-    'save_article':True # will save outputs in article folder if True
+    'save_article':False, # will save outputs in article folder if True
+    'univals':100,
+    'with_stats':True,
+    'bins':18,
+    'seed':None,
 }
 
 cross_correlogram_params = {

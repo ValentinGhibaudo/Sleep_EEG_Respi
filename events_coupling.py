@@ -30,72 +30,38 @@ def get_phase_angles(rsp_features, event_times):
 def events_to_resp_coupling(run_key, **p):
 
     events_dict = {}
-    events_dict['spindles'] = spindles_tag_job.get(run_key).to_dataframe()
-    events_dict['slowwaves'] = slowwaves_tag_job.get(run_key).to_dataframe()
+    events_dict['Spindles'] = spindles_tag_job.get(run_key).to_dataframe()
+    events_dict['SlowWaves'] = slowwaves_tag_job.get(run_key).to_dataframe()
     rsp_features = resp_tag_job.get(run_key).to_dataframe()
+    ts_labels = p['timestamps_labels']
 
-    ds = xr.Dataset()
+    concat = []
 
-    for chan in p['chans']:
-        for event_label in ['spindles','slowwaves']:
-            events = events_dict[event_label] # get events df
-            mask_channels = events['Channel'] == chan # select events only detected in the channel
-            events_of_chan = events[mask_channels] # keep events of set channels
+    for event_label in ['Spindles','SlowWaves']:
+        ts_label = ts_labels[event_label]
+        events = events_dict[event_label] # get events df
+        events_angles = events.copy()
+        events_angles['Participant'] = run_key
+        events_angles['Resp_Angle'] = np.nan
+        events_angles['Event_type'] = event_label
+        if event_label == 'SlowWaves':
+            events_angles['Sp_Speed'] = np.nan
 
-            if event_label == 'spindles': 
-                rsp_features_with_the_event = rsp_features[rsp_features['Spindle_Tag'] == 1] # keep only rsp cycles with spindles inside
-            elif event_label == 'slowwaves':
-                rsp_features_with_the_event = rsp_features[rsp_features['SlowWave_Tag'] == 1] # keep only rsp cycles with slowwaves inside
+        if event_label == 'Spindles': 
+            rsp_features_with_the_event = rsp_features[rsp_features['Spindle_Tag'] == 1] # keep only rsp cycles with spindles inside
+        elif event_label == 'SlowWaves':
+            rsp_features_with_the_event = rsp_features[rsp_features['SlowWave_Tag'] == 1] # keep only rsp cycles with slowwaves inside
 
-            rsp_features_of_the_stage = rsp_features_with_the_event[rsp_features_with_the_event['sleep_stage'] == p['stage']] # keep only respi cycles of the stage (and with events inside)
+        for i, row in rsp_features_with_the_event.iterrows():
+            mask_ev_in_cycle = (events[ts_label] >= row['start_time']) & (events[ts_label] < row['stop_time'])
+            ev_in_cycle = events[mask_ev_in_cycle]
+            events_angles.loc[ev_in_cycle.index, 'Resp_Angle'] = ((ev_in_cycle[ts_label].values - row['start_time']) / row['cycle_duration']) * 2 * np.pi
 
-            if event_label == 'spindles':
+        concat.append(events_angles[['Participant','Event_type','Channel','Stage_Letter','night_quartile','cooccuring','Sp_Speed','Resp_Angle']])
 
-                for sp_speed in ['SS','FS']:
-
-                    mask_speed = events_of_chan['Sp_Speed'] == sp_speed
-                    spindles_speed = events_of_chan[mask_speed]
-
-                    for sp_cooccuring in [True, False]:
-
-                        spindles_cooccuring = spindles_speed[spindles_speed['cooccuring'] == sp_cooccuring]
-                        
-                        if sp_cooccuring:
-                            occuring_save_label = 'cooccur'
-                        else:
-                            occuring_save_label = 'notcooccur'
-                            
-                        for half in ['firsthalf','secondhalf']:
-                            sp_half = spindles_cooccuring[spindles_cooccuring['half_night'] == half]
-                            
-                            sp_times = sp_half[p['timestamps_labels'][event_label]].values
-
-                            if sp_times.size != 0:
-                                phase_angles_rsp = get_phase_angles(rsp_features_of_the_stage, sp_times)
-                                ds[f'{run_key}_{event_label}_{occuring_save_label}_{sp_speed}_{half}_{chan}'] = phase_angles_rsp # store angles from the subject & event type in a dataset
-
-
-            elif event_label == 'slowwaves':
-
-                for sp_inside in [True, False]:
-
-                    mask_occuring = events_of_chan['cooccuring'] == sp_inside
-                    sw_occuring = events_of_chan[mask_occuring]
-                    
-                    if sp_inside:
-                        sp_inside_save_label = 'cooccur'
-                    else:
-                        sp_inside_save_label = 'notcooccur'
-                        
-                    for half in ['firsthalf','secondhalf']:
-                        sw_half = sw_occuring[sw_occuring['half_night'] == half]
-                        sw_times = sw_half[p['timestamps_labels'][event_label]].values
-                        
-                        if sw_times.size != 0:
-                            phase_angles_rsp = get_phase_angles(rsp_features_of_the_stage, sw_times) # compute phase angles of event for each respi cycle
-                            ds[f'{run_key}_{event_label}_{sp_inside_save_label}_{half}_{chan}'] = phase_angles_rsp # store angles from the subject & event type in a dataset
-
-    return ds
+    df_angles = pd.concat(concat)
+    df_angles = df_angles[~df_angles['Resp_Angle'].isna()]
+    return xr.Dataset(df_angles)
 
 event_coupling_job = jobtools.Job(precomputedir, 'events_resp_coupling', events_coupling_params, events_to_resp_coupling)
 jobtools.register_job(event_coupling_job)
@@ -103,12 +69,12 @@ jobtools.register_job(event_coupling_job)
 def test_events_to_resp_coupling():
     run_key = 'S1'
     ds_coupling = events_to_resp_coupling(run_key, **events_coupling_params)
-    print(ds_coupling)
+    print(ds_coupling.to_dataframe())
 
 
 
 def compute_all():
-    jobtools.compute_job_list(event_coupling_job, run_keys, force_recompute=False, engine='loop')
+    jobtools.compute_job_list(event_coupling_job, run_keys, force_recompute=True, engine='loop')
 
 if __name__ == '__main__':
     # test_events_to_resp_coupling()

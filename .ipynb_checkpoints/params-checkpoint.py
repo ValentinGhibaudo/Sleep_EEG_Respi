@@ -155,13 +155,16 @@ events_coupling_stats_params = {
     'events_coupling_params':events_coupling_params,
     'stage':compute_stage,
     'chan':compute_chan,
-    'save_article':True # will save outputs in article folder if True
+    'save_article':False # will save outputs in article folder if True
 }
 
 events_coupling_figs_params = {
     'events_coupling_params':events_coupling_params,
     'stage':compute_stage,
-    'save_article':True # will save outputs in article folder if True
+    'save_article':False, # will save outputs in article folder if True
+    'univals':100,
+    'with_stats':True,
+    'bins':18
 }
 
 cross_correlogram_params = {

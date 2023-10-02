@@ -58,7 +58,7 @@ from jobtools import _run_one_job_task
 
 from {module_name} import {job_instance_name} as job
 
-job.compute("{keys}", force_recompute={force_recompute})
+job.compute({keys}, force_recompute={force_recompute})
 """
 
 
@@ -160,7 +160,7 @@ def compute_job_list(job, list_keys, force_recompute=True, engine='loop', **engi
                     module_folder=Path('.').absolute(),
                     module_name=module_name,
                     job_instance_name=job.job_name+'_job',
-                    keys=keys,
+                    keys=', '.join(f'"{k}"' for k in keys),
                     force_recompute=force_recompute,
                 )
                 f.write(slurm_script)
