@@ -71,12 +71,26 @@ def test_events_to_resp_coupling():
     ds_coupling = events_to_resp_coupling(run_key, **events_coupling_params)
     print(ds_coupling.to_dataframe())
 
+def concat_events_coupling(global_key, **p):
+    concat = [event_coupling_job.get(run_key).to_dataframe() for run_key in run_keys]
+    concat = pd.concat(concat).reset_index(drop = True)
+    return xr.Dataset(concat)
+
+def test_concat_events_coupling():
+    print(concat_events_coupling('global_key', **concat_events_coupling_params).to_dataframe())
+
+concat_events_coupling_job = jobtools.Job(precomputedir, 'concat_events_coupling', concat_events_coupling_params, concat_events_coupling)
+jobtools.register_job(concat_events_coupling_job)
+
+
 
 
 def compute_all():
-    jobtools.compute_job_list(event_coupling_job, run_keys, force_recompute=True, engine='loop')
+    # jobtools.compute_job_list(event_coupling_job, run_keys, force_recompute=True, engine='loop')
+    jobtools.compute_job_list(concat_events_coupling_job, run_keys, force_recompute=True, engine='loop')
 
 if __name__ == '__main__':
     # test_events_to_resp_coupling()
+    test_concat_events_coupling()
 
-    compute_all()
+    # compute_all()

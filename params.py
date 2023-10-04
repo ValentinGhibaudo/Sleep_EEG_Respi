@@ -151,6 +151,10 @@ events_coupling_params = {
     'timestamps_labels':{'Spindles':timestamps_labels['spindles'] , 'SlowWaves':timestamps_labels['slowwaves']} # timestamp label of the event that will be considered for tagging of respi cycles
 }
 
+concat_events_coupling_params = {
+    'events_coupling_params':events_coupling_params
+}
+
 events_coupling_stats_params = {
     'events_coupling_params':events_coupling_params,
     'stage':compute_stage,
