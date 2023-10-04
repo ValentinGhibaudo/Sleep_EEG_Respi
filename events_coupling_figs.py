@@ -8,7 +8,7 @@ from circular_stats import HR2P
 import jobtools
 from params import *
 from configuration import *
-from events_coupling import event_coupling_job
+from events_coupling import event_coupling_job, concat_events_coupling_job
 from rsp_detection import resp_tag_job
 
 
@@ -61,23 +61,16 @@ def pval_stars(p):
         stars = np.nan
     return stars
 
-def get_angles(ds, pattern):
-    coords = list(ds.coords)
-    filtered_coords = filter(coords, pattern)
-    angles = []
-    for coord in filtered_coords:
-        angles.extend(list(ds[coord].values))
-    return angles
-
-def load_grouped_angles(subject, event, cooccuring, speed, chan, quart_night):
+def load_angles(event, subject = '*', stage = '*', cooccuring = '*', speed = '*', chan = '*', quart_night = '*'):
 
     """
     High level function that load angles according to arguments and concatenate them if '*' argument
 
     Parameters (str)
     ----------
+    event : 'Spindles' or 'SlowWaves'
     subject : From 'S1' to 'S20', '*' to concatenate all
-    event : 'spindles' or 'slowwaves' for spindles or slow-wave 
+    stage : 'N2' or 'N3, or '*' to concatenate all
     cooccuring : 'cooccur' or 'notcoocur', '*' to concatenate both
     speed : 'SS' or 'FS' for slow or fast spindles, '*' to concatenate both (useful only for spindles)
     quart_night : 'firsthalf' ot 'secondhalf' of night, '*' to concatenate both
@@ -85,17 +78,45 @@ def load_grouped_angles(subject, event, cooccuring, speed, chan, quart_night):
     """
 
     if subject == '*':
-        concat = [event_coupling_job.get(run_key).to_dataframe().reset_index(drop = True) for run_key in run_keys]
-        ds_search = pd.concat(concat, dim = 'subject')
+        df_angles = concat_events_coupling_job.get('global_key').to_dataframe()
     else:
-        ds_search = event_coupling_job.get(subject)
+        df_angles = event_coupling_job.get(subject).to_dataframe()
 
-    if event == 'spindles':
-        pattern = f'{subject}_spindles_{cooccuring}_{speed}_{half}_{chan}'
-    elif event == 'slowwaves':
-        pattern = f'{subject}_slowwaves_{cooccuring}_{half}_{chan}'
+    df_angles = df_angles[df_angles['Event_type'] == event]
 
-    return np.array(get_angles(ds_search, pattern))
+    if cooccuring == '*':
+        mask_cooccuring = df_angles['cooccuring'].isin(df_angles['cooccuring'].unique())
+    else:
+        mask_cooccuring = df_angles['cooccuring'] == cooccuring
+        
+    if stage == '*':
+        mask_stage = df_angles['Stage_Letter'].isin(df_angles['Stage_Letter'].unique())
+    else:
+        mask_stage = df_angles['Stage_Letter'] == stage        
+    
+    if speed == '*':
+        mask_speed = df_angles['Sp_Speed'].isin(df_angles['Sp_Speed'].unique())
+    else:
+        mask_speed = df_angles['Sp_Speed'] == speed
+
+    if chan == '*':
+        mask_chan = df_angles['Channel'].isin(df_angles['Channel'].unique())
+    else:
+        mask_chan = df_angles['Channel'] == chan
+
+    if quart_night == '*':
+        mask_night = df_angles['night_quartile'].isin(df_angles['night_quartile'].unique())
+    else:
+        mask_night = df_angles['night_quartile'] == quart_night
+
+    if event == 'Spindles':
+        mask =  mask_stage & mask_cooccuring & mask_speed & mask_chan & mask_night 
+    elif event == 'SlowWaves':
+        mask = mask_stage & mask_cooccuring & mask_chan & mask_night & mask_stage
+
+    df_angles = df_angles[mask]
+
+    return df_angles['Resp_Angle'].values
 
 def circular_plot_angles(
     angles, 
@@ -222,7 +243,7 @@ def get_respi_ratio(subject , stage, ratio_df):
 
 #         ratio = get_respi_ratio(subject = '*', stage = stage, ratio_df = cycles_ratios)
 
-#         angles = load_grouped_angles(subject = '*' , event = ev, cooccuring = '*', speed = '*', chan = chan, half = '*')
+#         angles = load_angles(subject = '*' , event = ev, cooccuring = '*', speed = '*', chan = chan, half = '*')
 
 #         color = colors[ev]
 #         circular_plot_angles(angles, color=color, ax=ax, ratio_plot = ratio, with_title = with_title, with_arrow = True, with_rticks = True)
@@ -264,7 +285,7 @@ def get_respi_ratio(subject , stage, ratio_df):
 
 #         if ev == 'spindles':
 #             for speed, speed_title in zip(['SS','FS'],['Slow','Fast']):
-#                 angles = load_grouped_angles(subject = '*' , event = ev, cooccuring = '*', speed = speed, chan = chan, half = '*')
+#                 angles = load_angles(subject = '*' , event = ev, cooccuring = '*', speed = speed, chan = chan, half = '*')
 
 #                 if angles.size == 0:
 #                     continue
@@ -282,7 +303,7 @@ def get_respi_ratio(subject , stage, ratio_df):
 
 #         elif ev == 'slowwaves':
 
-#             angles = load_grouped_angles(subject = '*' , event = ev,cooccuring = '*', speed = speed, chan = chan, half = '*')
+#             angles = load_angles(subject = '*' , event = ev,cooccuring = '*', speed = speed, chan = chan, half = '*')
 
 #             if angles.size == 0:
 #                 continue
@@ -333,7 +354,7 @@ def get_respi_ratio(subject , stage, ratio_df):
         
 #         ratio = get_respi_ratio(subject = '*', stage = stage, ratio_df = cycles_ratios)
 
-#         angles = load_grouped_angles(subject = '*' , event = load, cooccuring = '*', speed = speed, chan = chan, half = '*')
+#         angles = load_angles(subject = '*' , event = load, cooccuring = '*', speed = speed, chan = chan, half = '*')
 
 #         circular_plot_angles(angles, color=color, ax=ax, ratio_plot = ratio, with_title = with_title, with_arrow = True, with_rticks = False, polar_ticks = 'light', lw = 6)
 
@@ -400,7 +421,7 @@ def get_respi_ratio(subject , stage, ratio_df):
 
 #             if ev == 'spindles':
 #                 for speed, speed_title in zip(['SS','FS'],['Slow','Fast']):
-#                     angles = load_grouped_angles(subject = '*' , event = ev, cooccuring = '*', speed = speed, chan = chan, half = half)
+#                     angles = load_angles(subject = '*' , event = ev, cooccuring = '*', speed = speed, chan = chan, half = half)
 
 #                     if angles.size == 0:
 #                         continue
@@ -421,7 +442,7 @@ def get_respi_ratio(subject , stage, ratio_df):
 
 #             elif ev == 'slowwaves':
 
-#                 angles = load_grouped_angles(subject = '*' , event = ev,cooccuring = '*', speed = speed, chan = chan, half = half)
+#                 angles = load_angles(subject = '*' , event = ev,cooccuring = '*', speed = speed, chan = chan, half = half)
 
 #                 if angles.size == 0:
 #                     continue
@@ -494,7 +515,7 @@ def polar_plots_individuals_chan_fig(chan, **p):
 
                 ratio = get_respi_ratio(subject = subject, stage = stage, ratio_df = cycles_ratios)
 
-                angles = load_grouped_angles(subject = subject , event = event_type, cooccuring = '*', speed = '*', chan = chan, half = '*')
+                angles = load_angles(subject = subject , event = event_type, cooccuring = '*', speed = '*', chan = chan, half = '*')
 
                 if angles.size == 0:
                     continue 
@@ -569,7 +590,7 @@ def spindles_pool_chan_sub_speed_q_cooccur_fig(key, **p):
         color = colors[c]
 
         
-        angles = load_grouped_angles(subject = '*' , event = 'spindles', cooccuring = loads[c], speed = '*', chan = '*', half = '*')
+        angles = load_angles(subject = '*' , event = 'spindles', cooccuring = loads[c], speed = '*', chan = '*', half = '*')
         N = angles.size
 
         circular_plot_angles(angles,

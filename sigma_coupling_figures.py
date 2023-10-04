@@ -56,28 +56,31 @@ cycle_types = mean_phase_freqs.coords['cycle_type'].values
 if not save_article:
     for subject in run_keys:
         subject_title = 'P{}'.format(subject.split('S')[1])
-        fig, axs = plt.subplots(ncols = cycle_types.size, sharex = True, sharey = True, constrained_layout = True, figsize = (20,4))
-        fig.suptitle(f'{subject_title} - {sigma_coupling_chan}', fontsize = 20)
+        
+        nrows = len(channels_events_select)
+        fig, axs = plt.subplots(nrows=nrows, ncols = cycle_types.size, sharex = True, sharey = True, constrained_layout = True, figsize = (20,20))
+        fig.suptitle(f'{subject_title}', fontsize = 20)
+        
+        for row, chan in enumerate(channels_events_select):
+            for col, cycle_type in enumerate(cycle_types):
 
-        for col, cycle_type in enumerate(cycle_types):
+                ax = axs[row, col]
+                N = Ns.loc[subject,cycle_type]
+                data = mean_phase_freqs.loc[subject, cycle_type,chan,:,:].data.T
+                # print(points.shape, freqs.shape, data.shape)
+                im = ax.pcolormesh(points, freqs, data)
+                ax.axvline(x = transition_ratio, color = 'r')
 
-            ax = axs[col]
-            N = Ns.loc[subject,cycle_type]
-            data = mean_phase_freqs.loc[subject, cycle_type,sigma_coupling_chan,:,:].data.T
-            # print(points.shape, freqs.shape, data.shape)
-            im = ax.pcolormesh(points, freqs, data)
-            ax.axvline(x = transition_ratio, color = 'r')
-            
-            ax.set_title(f'{subject_title} - {cycle_type} - N = {N}')
-            if col == 0:
-                ax.set_ylabel('Freq [Hz]')
-            ax.set_xlabel('Phase')
-            ax.set_xticks([0, 0, transition_ratio, 1])
-            ax.set_xticklabels([0, 0, 'inspi-expi', '360°'], rotation=45, fontsize=10)
-            # if col == cycle_types.size - 1:
-            #     plt.colorbar(im, ax = axs[col], label = 'Power in µV**2')
-            # else:
-            #     plt.colorbar(im, ax = axs[col])
+                ax.set_title(f'{chan} - {cycle_type} - N = {N}')
+                if col == 0:
+                    ax.set_ylabel('Freq [Hz]')
+                ax.set_xlabel('Phase')
+                ax.set_xticks([0, 0, transition_ratio, 1])
+                ax.set_xticklabels([0, 0, 'inspi-expi', '360°'], rotation=45, fontsize=10)
+                # if col == cycle_types.size - 1:
+                #     plt.colorbar(im, ax = axs[col], label = 'Power in µV**2')
+                # else:
+                #     plt.colorbar(im, ax = axs[col])
             
         fig.savefig(save_folder / f'{subject_title}_phase_freq{fig_format}', bbox_inches = 'tight', dpi = dpis)
         plt.close()
@@ -91,10 +94,7 @@ ncols = subject_array.shape[1]
 
 for chan in channels_events_select:
     fig, axs = plt.subplots(nrows = nrows, ncols = ncols, figsize = (20,10), sharex = True, sharey = True, constrained_layout = True)
-    if not save_article:
-        fig.suptitle(f'{chan} sigma power during respiration cycle by subject ({fig_global_cycle_type} cycles mode)', fontsize = 20, y = 1.05)
-    else:
-        fig.suptitle(f'{chan}', fontsize = 20, y = 1.05)
+    fig.suptitle(f'{chan}', fontsize = 20, y = 1.05)
     for r in range(nrows):
         for c in range(ncols):
             ax = axs[r,c]
@@ -103,7 +103,8 @@ for chan in channels_events_select:
 
             im = ax.pcolormesh(points, freqs, data)
             ax.axvline(x = transition_ratio, color = 'r')
-            ax.set_title(subject)
+            subject_title = 'P{}'.format(subject.split('S')[1])
+            ax.set_title(subject_title)
             if c == 0:
                 ax.set_ylabel('Freq [Hz]')
             if r == nrows-1:

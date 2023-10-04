@@ -9,7 +9,7 @@ from preproc_staging import preproc_job, upsample_hypno_job, hypnogram_job
 
 # JOB SPINDLES DETECTION
 
-def spindle_detection(run_key, **p):
+def spindle_detect(run_key, **p):
     data = preproc_job.get(run_key)['preproc'] # slow-waves will be detected on reref data on average mastoid
     srate = data.attrs['srate']
     data_eeg = data.sel(chan = p['chans']).values # sel reref eeg data only (without physio)
@@ -36,18 +36,18 @@ def spindle_detection(run_key, **p):
     return xr.Dataset(spindles)
 
 
-spindles_detect_job = jobtools.Job(precomputedir, 'spindle_detection', spindle_detection_params, spindle_detection)
+spindles_detect_job = jobtools.Job(precomputedir, 'spindles_detect', spindles_detect_params, spindle_detect)
 jobtools.register_job(spindles_detect_job)
 
 def test_spindles_detection():
     run_key = 'S1'
-    spindles = spindle_detection(run_key, **spindle_detection_params).to_dataframe()
+    spindles = spindle_detect(run_key, **spindles_detect_params).to_dataframe()
     print(spindles)
 
 
 # JOB SLOWWAVES DETECTION
 
-def slowwave_detection(run_key, **p):
+def slowwave_detect(run_key, **p):
     data = preproc_job.get(run_key)['preproc'] # slow-waves will be detected on reref data on average mastoid
     srate = data.attrs['srate']
     data_eeg = data.sel(chan = p['chans']).values # sel reref eeg data only (without physio)
@@ -75,18 +75,17 @@ def slowwave_detection(run_key, **p):
 
     return xr.Dataset(slowwaves)
 
-
-slowwaves_detect_job = jobtools.Job(precomputedir, 'slowwave_detection', slowwaves_detection_params, slowwave_detection)
+slowwaves_detect_job = jobtools.Job(precomputedir, 'slowwaves_detect', slowwaves_detect_params, slowwave_detect)
 jobtools.register_job(slowwaves_detect_job)
 
 def test_slowwave_detection():
     run_key = 'S1'
-    slowwaves = slowwave_detection(run_key, **slowwaves_detection_params).to_dataframe()
+    slowwaves = slowwave_detect(run_key, **slowwaves_detect_params).to_dataframe()
     print(slowwaves)
 
 
 # JOB EVENTS TAGGING
-def cooccuring_sp_sw_df(spindles, slowwaves): 
+def cooccuring_sp_sw_df(spindles, slowwaves, win_margin = 1): 
     
     """
     This function will add columns to the initial dataframe giving information of presence of the spindle inside slowwave or not and in this case, when does it occur in the slowwave
@@ -94,6 +93,7 @@ def cooccuring_sp_sw_df(spindles, slowwaves):
     Inputs =
     spindles : dataframe of spindles
     slowwaves : dataframe of slowwaves
+    win_margin : int or float that give the seconds added or subtracted after or before start or stop time of slow wave times to consider co-occuring of spindle with it
     
     Outputs = 
     sp_return : dataframe of spindles labelized according to the co-occurence or not with slowwave
@@ -110,8 +110,8 @@ def cooccuring_sp_sw_df(spindles, slowwaves):
             if not sw_staged_ch.shape[0] == 0: # if masked slowwave df is not empty ...
                 for i, row in sw_staged_ch.iterrows(): # ... loop on rows = on slowwaves 
 
-                    start_window = row['Start'] # get start time of the slowwave
-                    stop_window = row['End'] # get stop time of the slowwave
+                    start_window = row['Start'] - win_margin # get start time of the slowwave
+                    stop_window = row['End'] + win_margin # get stop time of the slowwave
                     negpeak = row['NegPeak'] # get time of the neg peak of the slowwave
                     duration = row['Duration'] # get duration of the slowwave
 
@@ -146,16 +146,34 @@ def spindle_tagging(run_key, **p):
     slowwaves = slowwaves_detect_job.get(run_key).to_dataframe()
     
     
-    sp_cooccuring, sw_cooccuring = cooccuring_sp_sw_df(spindles, slowwaves)
+    sp_cooccuring, sw_cooccuring = cooccuring_sp_sw_df(spindles, slowwaves, win_margin = p['win_margin'])
     
     sp_speed = sp_cooccuring.copy()
     sp_speed['Sp_Speed'] = np.nan
     sp_speed.loc[:,'Sp_Speed'] = (sp_speed['Frequency'] >= p['spindles_freq_threshold'][run_key]).map({False:'SS',True:'FS'}) # add a column on spindle df setting if the spindle is a slow or a fast spindle according to the set threshold manually chosen for each subject (bimodal distribution of frequency of spindles)
     
     hypno = hypnogram_job.get(run_key).to_dataframe()
+
+    q1 = hypno['time'].quantile(0.25)
     median_time = hypno['time'].median()
-    sp_speed['half_night'] = sp_speed['Start'].apply(lambda x:'firsthalf' if x < median_time else 'secondhalf')
-    
+    q3 = hypno['time'].quantile(0.75)
+
+    sp_speed['night_quartile'] = np.nan
+
+    ev_label = timestamps_labels['spindles']
+
+    for i, row in sp_speed.iterrows():
+        if row[ev_label] <= q1:
+            sp_speed.loc[i,'night_quartile'] = 'q1'
+        elif row[ev_label] > q1 and row[ev_label] <= median_time:
+            sp_speed.loc[i,'night_quartile'] = 'q2'
+        elif row[ev_label] > median_time and row[ev_label] <= q3:
+            sp_speed.loc[i,'night_quartile'] = 'q3'
+        elif row[ev_label] > q3:
+            sp_speed.loc[i,'night_quartile'] = 'q4'
+
+    sp_speed['cooccuring'] = sp_speed['cooccuring'].map({False:'notcooccur',True:'cooccur'})
+
     return xr.Dataset(sp_speed)
 
 spindles_tag_job = jobtools.Job(precomputedir, 'spindle_tag', spindles_tagging_params, spindle_tagging)
@@ -169,12 +187,30 @@ def test_spindle_tagging():
 def slowwave_tagging(run_key, **p):
     spindles = spindles_detect_job.get(run_key).to_dataframe()
     slowwaves = slowwaves_detect_job.get(run_key).to_dataframe()
-    sp_cooccuring, sw_cooccuring = cooccuring_sp_sw_df(spindles, slowwaves)
+    sp_cooccuring, sw_cooccuring = cooccuring_sp_sw_df(spindles, slowwaves, win_margin = p['win_margin'])
     
     hypno = hypnogram_job.get(run_key).to_dataframe()
+
+    q1 = hypno['time'].quantile(0.25)
     median_time = hypno['time'].median()
-    sw_cooccuring['half_night'] = sw_cooccuring['Start'].apply(lambda x:'firsthalf' if x < median_time else 'secondhalf')
-    
+    q3 = hypno['time'].quantile(0.75)
+
+    sw_cooccuring['night_quartile'] = None
+
+    ev_label = timestamps_labels['spindles']
+
+    for i, row in sw_cooccuring.iterrows():
+        if row[ev_label] <= q1:
+            sw_cooccuring.loc[i,'night_quartile'] = 'q1'
+        elif row[ev_label] > q1 and row[ev_label] <= median_time:
+            sw_cooccuring.loc[i,'night_quartile'] = 'q2'
+        elif row[ev_label] > median_time and row[ev_label] <= q3:
+            sw_cooccuring.loc[i,'night_quartile'] = 'q3'
+        elif row[ev_label] > q3:
+            sw_cooccuring.loc[i,'night_quartile'] = 'q4'
+
+    sw_cooccuring['cooccuring'] = sw_cooccuring['cooccuring'].map({False:'notcooccur',True:'cooccur'})
+
     return xr.Dataset(sw_cooccuring)
 
 slowwaves_tag_job = jobtools.Job(precomputedir, 'slowwave_tag', slowwaves_tagging_params, slowwave_tagging)
@@ -194,13 +230,26 @@ def test_slowwave_tagging():
 def compute_all():
     # jobtools.compute_job_list(spindles_detect_job, run_keys, force_recompute=False, engine='loop')
     # jobtools.compute_job_list(spindles_detect_job, run_keys, force_recompute=False, engine='joblib', n_jobs = 5)
-    
+
+    # jobtools.compute_job_list(spindles_detect_job, [(sub,) for sub in run_keys], force_recompute=False, engine='slurm',
+    #                           slurm_params={'cpus-per-task':'2', 'mem':'10G', },
+    #                           module_name='detect_sleep_events',
+    #                           )
+
     # jobtools.compute_job_list(slowwaves_detect_job, run_keys, force_recompute=False, engine='loop')
     # jobtools.compute_job_list(slowwaves_detect_job, run_keys, force_recompute=False, engine='joblib', n_jobs = 5)
 
-    # jobtools.compute_job_list(spindles_tag_job, run_keys, force_recompute=False, engine='loop')
-    jobtools.compute_job_list(slowwaves_tag_job, run_keys, force_recompute=False, engine='loop')
+    # jobtools.compute_job_list(slowwaves_detect_job, [(sub,) for sub in run_keys], force_recompute=False, engine='slurm',
+    #                           slurm_params={'cpus-per-task':'2', 'mem':'10G', },
+    #                           module_name='detect_sleep_events',
+    #                           )
 
+    # jobtools.compute_job_list(spindles_tag_job, run_keys, force_recompute=True, engine='loop')
+    # jobtools.compute_job_list(slowwaves_tag_job, run_keys, force_recompute=True, engine='loop')
+
+
+    jobtools.compute_job_list(spindles_tag_job, run_keys, force_recompute=True, engine='joblib', n_jobs = 10)
+    jobtools.compute_job_list(slowwaves_tag_job, run_keys, force_recompute=True, engine='joblib', n_jobs = 10)
 
 if __name__ == '__main__':
     # test_spindles_detection()

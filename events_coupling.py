@@ -87,10 +87,11 @@ jobtools.register_job(concat_events_coupling_job)
 
 def compute_all():
     # jobtools.compute_job_list(event_coupling_job, run_keys, force_recompute=True, engine='loop')
-    jobtools.compute_job_list(concat_events_coupling_job, run_keys, force_recompute=True, engine='loop')
+    # jobtools.compute_job_list(event_coupling_job, run_keys, force_recompute=True, engine='joblib', n_jobs = 10)
+    jobtools.compute_job_list(concat_events_coupling_job, [('global_key',)], force_recompute=True, engine='loop')
 
 if __name__ == '__main__':
     # test_events_to_resp_coupling()
-    test_concat_events_coupling()
+    # test_concat_events_coupling()
 
-    # compute_all()
+    compute_all()

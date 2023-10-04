@@ -231,7 +231,7 @@ def test_resp_tag():
 
 def compute_all():
     # jobtools.compute_job_list(resp_features_job, run_keys, force_recompute=False, engine='loop')
-    jobtools.compute_job_list(resp_tag_job, run_keys, force_recompute=False, engine='loop')
+    jobtools.compute_job_list(resp_tag_job, run_keys, force_recompute=False, engine='joblib', n_jobs = 10)
 
 
 if __name__ == '__main__':
