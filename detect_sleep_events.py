@@ -172,7 +172,7 @@ def spindle_tagging(run_key, **p):
         elif row[ev_label] > q3:
             sp_speed.loc[i,'night_quartile'] = 'q4'
 
-    sp_speed['cooccuring'] = sp_speed['cooccuring'].map({False:0,True:1})
+    sp_speed['cooccuring'] = sp_speed['cooccuring'].map({False:'notcooccur',True:'cooccur'})
 
     return xr.Dataset(sp_speed)
 
@@ -209,7 +209,7 @@ def slowwave_tagging(run_key, **p):
         elif row[ev_label] > q3:
             sw_cooccuring.loc[i,'night_quartile'] = 'q4'
 
-    sw_cooccuring['cooccuring'] = sw_cooccuring['cooccuring'].map({False:0,True:1})
+    sw_cooccuring['cooccuring'] = sw_cooccuring['cooccuring'].map({False:'notcooccur',True:'cooccur'})
 
     return xr.Dataset(sw_cooccuring)
 
