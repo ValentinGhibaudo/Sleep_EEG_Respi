@@ -208,7 +208,7 @@ sigma_coupling_params = {
 sigma_coupling_figs_params = {
     'sigma_coupling_params':sigma_coupling_params,
     'sigma_coupling_chan' :compute_chan, # global sigma coupling fig with just one matrix by patient will average phase-freq from these chans
-    'fig_global_cycle_type' : 'spindled', # global sigma coupling fig with just one matrix by patient will select this type of tagging of resp cycles (choices = ['all','spindled','unspindled','N2','diff'])
+    'fig_global_cycle_type' : 'spindled_both', # global sigma coupling fig with just one matrix by patient will select this type of tagging of resp cycles (choices = ['all','spindled','unspindled','N2','diff'])
     'save_article':True # will save outputs in article folder if True
 }
 

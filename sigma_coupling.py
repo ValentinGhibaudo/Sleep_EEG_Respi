@@ -149,24 +149,33 @@ def compute_sigma_coupling(run_key, **p):
         
     resp_features_stretched = rsp_features_nan.iloc[cycles,:] # resp features are masked to the true computed cycles in deform_to_cycle_template
 
-    c_spindled = resp_features_stretched[(resp_features_stretched['Spindle_Tag'] == 1) & (resp_features_stretched['sleep_stage'].isin(p['stage']))].index.to_numpy()
-    c_unspindled = resp_features_stretched[(resp_features_stretched['Spindle_Tag'] == 0) & (resp_features_stretched['sleep_stage'].isin(p['stage']))].index.to_numpy()
+    c_spindled_N2 = resp_features_stretched[(resp_features_stretched['Spindle_Tag'] == 1) & (resp_features_stretched['sleep_stage'] == 'N2')].index.to_numpy()
+    c_unspindled_N2 = resp_features_stretched[(resp_features_stretched['Spindle_Tag'] == 0) & (resp_features_stretched['sleep_stage'] == 'N2')].index.to_numpy()
+    c_spindled_N3 = resp_features_stretched[(resp_features_stretched['Spindle_Tag'] == 1) & (resp_features_stretched['sleep_stage'] == 'N3')].index.to_numpy()
+    c_unspindled_N3 = resp_features_stretched[(resp_features_stretched['Spindle_Tag'] == 0) & (resp_features_stretched['sleep_stage'] == 'N3')].index.to_numpy()
+    c_spindled_both = resp_features_stretched[(resp_features_stretched['Spindle_Tag'] == 1) & (resp_features_stretched['sleep_stage'].isin(['N2','N3']))].index.to_numpy()
+    c_unspindled_both = resp_features_stretched[(resp_features_stretched['Spindle_Tag'] == 0) & (resp_features_stretched['sleep_stage'].isin(['N2','N3']))].index.to_numpy()
     c_N2 = resp_features_stretched[resp_features_stretched['sleep_stage'] == 'N2'].index.to_numpy()
     c_N3 = resp_features_stretched[resp_features_stretched['sleep_stage'] == 'N3'].index.to_numpy()
     c_all = resp_features_stretched.dropna().index.to_numpy()
     
-
+    c_types = [c_all,c_spindled_both, c_unspindled_both, c_spindled_N2, c_unspindled_N2, c_spindled_N3, c_unspindled_N3, c_N2, c_N3, 'diff_both','diff_N2','diff_N3']
+    c_labels = ['all','spindled_both','unspindled_both','spindled_N2','unspindled_N2','spindled_N3','unspindled_N3','N2','N3','diff_both','diff_N2','diff_N3']
+    
     N_cycle_averaged = []
-
-    c_labels = ['all','spindled','unspindled','N2','N3','diff']
 
     da_mean = None
 
-    for c_label, c_type in zip(c_labels,[c_all, c_spindled, c_unspindled, c_N2,c_N3,'diff']):
-        if c_label == 'diff':
+    for c_label, c_type in zip(c_labels,c_types):
+        if c_label == 'diff_both':
             N_cycle_averaged.append(0)
-            phase_freq_mean = phase_freq_sigma.sel(cycle = c_spindled).mean('cycle') - phase_freq_sigma.sel(cycle = c_unspindled).mean('cycle')
-            
+            phase_freq_mean = phase_freq_sigma.sel(cycle = c_spindled_both).mean('cycle') - phase_freq_sigma.sel(cycle = c_unspindled_both).mean('cycle')
+        elif c_label == 'diff_N2':
+            N_cycle_averaged.append(0)
+            phase_freq_mean = phase_freq_sigma.sel(cycle = c_spindled_N2).mean('cycle') - phase_freq_sigma.sel(cycle = c_unspindled_N2).mean('cycle')     
+        elif c_label == 'diff_N3':
+            N_cycle_averaged.append(0)
+            phase_freq_mean = phase_freq_sigma.sel(cycle = c_spindled_N3).mean('cycle') - phase_freq_sigma.sel(cycle = c_unspindled_N3).mean('cycle')    
         else:
             N_cycle_averaged.append(c_type.size)
             phase_freq_mean = phase_freq_sigma.sel(cycle = c_type).mean('cycle')
@@ -217,8 +226,8 @@ def compute_all():
 
 if __name__ == '__main__':
     # test_compute_sigma_power()
-    # test_compute_sigma_coupling()
+    test_compute_sigma_coupling()
     
-    compute_all()
+    # compute_all()
 
 

@@ -174,7 +174,7 @@ for stage in compute_stage:
 
 
 # STATS SP SW POOLED
-print('sp sw pooled')
+# print('sp sw pooled')
 for stage in compute_stage:
     rows = []
     for ev in ['Spindles','SlowWaves']:
