@@ -159,14 +159,13 @@ concat_events_coupling_params = {
 
 events_coupling_stats_params = {
     'events_coupling_params':events_coupling_params,
-    'stage':compute_stage,
     'chan':compute_chan,
-    'save_article':False # will save outputs in article folder if True
+    'univals':100
 }
 
 events_coupling_figs_params = {
     'events_coupling_params':events_coupling_params,
-    'stage':compute_stage,
+    'stage':'N2',
     'save_article':False, # will save outputs in article folder if True
     'univals':100,
     'with_stats':True,
