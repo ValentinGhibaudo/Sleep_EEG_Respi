@@ -100,7 +100,7 @@ spindles_tagging_params = {
     'spindles_detect_params':spindles_detect_params,
     'slowwaves_detect_params':slowwaves_detect_params,
     'spindles_freq_threshold':spindles_freq_threshold,
-    'win_margin':1
+    'win_margin':0.2
 }
 
 slowwaves_tagging_params = {
@@ -112,11 +112,11 @@ slowwaves_tagging_params = {
 events_stats_params = {
     'spindles_tagging_params':spindles_tagging_params,
     'slowwaves_tagging_params':slowwaves_tagging_params,
-    'stage':compute_stage,
+    'stage':'N2',
     'chan':compute_chan,
     'interesting_variables':{'spindles':['Duration','Amplitude','RMS','AbsPower','RelPower','Frequency','Oscillations','Symmetry'],
                              'slowwaves':['Duration','ValNegPeak','ValPosPeak','PTP','Slope','Frequency']},
-    'save_article':True
+    'save_article':False
 }
 
 resp_params = {
@@ -208,7 +208,7 @@ sigma_coupling_params = {
 sigma_coupling_figs_params = {
     'sigma_coupling_params':sigma_coupling_params,
     'sigma_coupling_chan' :compute_chan, # global sigma coupling fig with just one matrix by patient will average phase-freq from these chans
-    'fig_global_cycle_type' : 'spindled_both', # global sigma coupling fig with just one matrix by patient will select this type of tagging of resp cycles (choices = ['all','spindled','unspindled','N2','diff'])
+    'fig_global_cycle_type' : 'spindled_N2', # global sigma coupling fig with just one matrix by patient will select this type of tagging of resp cycles 
     'save_article':True # will save outputs in article folder if True
 }
 

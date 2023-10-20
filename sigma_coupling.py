@@ -226,8 +226,8 @@ def compute_all():
 
 if __name__ == '__main__':
     # test_compute_sigma_power()
-    test_compute_sigma_coupling()
+    # test_compute_sigma_coupling()
     
-    # compute_all()
+    compute_all()
 
 

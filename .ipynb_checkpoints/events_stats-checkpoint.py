@@ -187,32 +187,33 @@ plt.close()
 
 # N EVENTS 
 print('DF COUNT EVENTS')
-rows = []
-for event_label in event_labels:
-    events = events_df[event_label]
-    for sub in run_keys:
-        for chan in events['Channel'].unique():
-            mask = (events['subject'] == sub) & (events['Stage_Letter'] == stage) & (events['Channel'] == chan)
-            n_ev_sub_stage_chan = events[mask].shape[0]
+for stage in ['N2','N3']:
+    rows = []
+    for event_label in event_labels:
+        events = events_df[event_label]
+        for sub in run_keys:
+            for chan in events['Channel'].unique():
+                mask = (events['subject'] == sub) & (events['Stage_Letter'] == stage) & (events['Channel'] == chan)
+                n_ev_sub_stage_chan = events[mask].shape[0]
 
-            row = [event_label ,sub, stage, chan , n_ev_sub_stage_chan]
-            rows.append(row)
-                    
-df_count_chan = pd.DataFrame(rows, columns = ['event','subject','stage','chan','N'])
-if not p['save_article']:
-    df_count_chan.to_excel(base_folder / 'results' / 'events_stats' / 'count_events_chan.xlsx')
-else:
-    df_count_chan.to_excel(article_folder / 'count_events_chan.xlsx')
+                row = [event_label ,sub, stage, chan , n_ev_sub_stage_chan]
+                rows.append(row)
 
-df_count = df_count_chan.groupby(['event','subject','stage']).sum(numeric_only = True)
-if not p['save_article']:
-    df_count.to_excel(base_folder / 'results' / 'events_stats' / 'count_events.xlsx')
-    df_count.groupby('event').mean(numeric_only = True).to_excel(base_folder / 'results' / 'events_stats' / 'count_events_mean.xlsx')
-    df_count.groupby('event').std(numeric_only = True).to_excel(base_folder / 'results' / 'events_stats' / 'count_events_sd.xlsx')
-else:
-    df_count.to_excel(article_folder / 'count_events.xlsx')
-    df_count.groupby('event').mean(numeric_only = True).to_excel(article_folder  / 'count_events_mean.xlsx')
-    df_count.groupby('event').std(numeric_only = True).to_excel(article_folder  / 'count_events_sd.xlsx')
+    df_count_chan = pd.DataFrame(rows, columns = ['event','subject','stage','chan','N'])
+    if not p['save_article']:
+        df_count_chan.to_excel(base_folder / 'results' / 'events_stats' / f'count_events_chan_{stage}.xlsx')
+    else:
+        df_count_chan.to_excel(article_folder / f'count_events_chan_{stage}xlsx')
+
+    df_count = df_count_chan.groupby(['event','subject','stage']).sum(numeric_only = True)
+    if not p['save_article']:
+        df_count.to_excel(base_folder / 'results' / 'events_stats' / f'count_events_{stage}.xlsx')
+        df_count.groupby('event').mean(numeric_only = True).to_excel(base_folder / 'results' / 'events_stats' / f'count_events_mean_{stage}.xlsx')
+        df_count.groupby('event').std(numeric_only = True).to_excel(base_folder / 'results' / 'events_stats' / f'count_events_sd_{stage}.xlsx')
+    else:
+        df_count.to_excel(article_folder / 'count_events.xlsx')
+        df_count.groupby('event').mean(numeric_only = True).to_excel(article_folder  / f'count_events_mean_{stage}.xlsx')
+        df_count.groupby('event').std(numeric_only = True).to_excel(article_folder  / f'count_events_sd_{stage}.xlsx')
 
 
 # DISTRIBUTIONS OF FREQ OF SPINDLES
