@@ -7,8 +7,14 @@ from events_coupling import event_coupling_job, concat_events_coupling_job
 from configuration import *
 from circular_stats import HR2P
 
-def get_circ_features(angles, univals=1000, seed=None, progress_bar = False): # angles in radians
-    pval = HR2P(angles, univals=univals, seed=seed, progress_bar=progress_bar)
+def get_circ_features(angles, univals=1000, seed=None, progress_bar = False, resample=True, size_resample = 10000): # angles in radians
+    if angles.size > 10000:
+        rng = np.random.default_rng(seed=seed)
+        angles_resampled = rng.choice(angles, size = size_resample)
+    else:
+        angles_resampled = angles.copy()
+    
+    pval = HR2P(angles_resampled, univals=univals, seed=seed, progress_bar=progress_bar)
 
     mu = pg.circ_mean(angles) #+ np.pi
     mu = int(np.degrees(mu))
@@ -85,7 +91,7 @@ def load_angles(event, subject = '*', stage = '*', cooccuring = '*', speed = '*'
         mask =  mask_stage & mask_cooccuring & mask_speed & mask_chan & mask_night 
     elif event == 'SlowWaves':
         mask = mask_stage & mask_cooccuring & mask_chan & mask_night 
-
+        
     df_angles = df_angles[mask]
     return df_angles['Resp_Angle'].values
 
@@ -98,10 +104,254 @@ def sub_to_p(sub):
 p = events_coupling_stats_params
 
 subjects = run_keys
-chan = p['chan']
 univals = p['univals']
 
-save_folder = base_folder / 'results' / 'events_coupling_figures' / 'stats'
+# save_folder = base_folder / 'results' / 'events_coupling_figures' / 'stats'
+save_folder = base_folder / 'autres' / 'article_N20' / 'clin_neurophy_submission2' / 'reviewing_2'
+
+
+compute_S3 = False
+compute_S2 = False
+compute_fig3A = True
+compute_fig3B = True
+
+
+# SUPPLEMENTARY S3
+if compute_S3:
+    print('S3')
+    ev_looped = ['Slow spindles','Fast spindles','Slow-Waves']
+    ev_load_dict = {'Slow spindles':'Spindles_SS','Fast spindles':'Spindles_FS','Slow-Waves':'SlowWaves'}
+
+    subject = '*'
+    chan = 'Fz'
+    stage = '*'
+    cooccuring = '*'
+
+    rows = []
+    for quart in ['q1','q2','q3','q4']:
+        print(quart)
+        for ev_clean in ev_looped:
+            if not ev_clean == 'Slow-Waves':
+                ev_load, speed = ev_load_dict[ev_clean].split('_')
+            else:
+                ev_load = ev_load_dict[ev_clean]
+                speed = 'NA'
+
+            angles = load_angles(subject = subject , 
+                                 event = ev_load, 
+                                 cooccuring = cooccuring, 
+                                 speed = speed, 
+                                 chan = chan, 
+                                 quart_night = quart, 
+                                 stage=stage)
+            N = angles.size
+            if not N == 0:
+                pval, mu, r = get_circ_features(angles, univals=univals)
+                stars = pval_stars(pval)
+                if ev_clean == 'Slow-Waves':
+                    row = [ev_clean, quart , N  , readable_pval(pval), stars, 'NA' , 'NA']
+                else:
+                    row = [ev_clean, quart , N  , readable_pval(pval), stars, mu , r]
+            else:
+                row = [ev_clean, quart , N  , 'NA', 'NA', 'NA' , 'NA']                
+            rows.append(row)
+    stats_pooled = pd.DataFrame(rows, columns = ['Event','Night quartile','N','p-HR','Significance','Mean Direction (°)','Mean Vector Length'])
+    stats_pooled.to_excel(save_folder / f'supplementary_table_3.xlsx', index = False)
+
+
+
+
+  
+# SUPPLEMENTARY S2
+if compute_S3:
+    print('S2')
+    ev_looped = ['Slow spindles','Fast spindles','Slow-Waves']
+    ev_load_dict = {'Slow spindles':'Spindles_SS','Fast spindles':'Spindles_FS','Slow-Waves':'SlowWaves'}
+
+    subject = '*'
+    cooccuring = '*'
+    quart_night = '*'
+    stage='*'
+
+
+    rows = []
+    for chan in channels_events_select:
+        print(chan)
+        for ev_clean in ev_looped:
+            if not ev_clean == 'Slow-Waves':
+                ev_load, speed = ev_load_dict[ev_clean].split('_')
+            else:
+                ev_load = ev_load_dict[ev_clean]
+                speed = '--'
+
+            angles = load_angles(subject = subject , 
+                                 event = ev_load, 
+                                 cooccuring = cooccuring, 
+                                 speed = speed, 
+                                 chan = chan, 
+                                 quart_night = quart_night, 
+                                 stage=stage)
+            N = angles.size
+            if not N == 0:
+                pval, mu, r = get_circ_features(angles, univals=univals)
+                stars = pval_stars(pval)
+                if ev_clean == 'Slow-Waves':
+                    row = [chan, ev_clean, N  , readable_pval(pval), stars, 'NA' , 'NA']
+                else:
+                    row = [chan, ev_clean, N  , readable_pval(pval), stars, mu , r]
+            else:
+                row = [chan, ev_clean, N  , 'NA', 'NA', 'NA' , 'NA']
+            rows.append(row)
+    stats_pooled = pd.DataFrame(rows, columns = ['Channel','Event','N','p-HR','Significance','Mean Direction (°)','Mean Vector Length'])
+    stats_pooled.to_excel(save_folder / f'supplementary_table_2.xlsx', index = False)   
+
+
+
+
+
+# FOR STATS IN RESULTS SECTION 3.4.	Spindles and slow waves events coupling with respiration 
+# FIG 3A
+if compute_fig3A:
+    print('fig3A stats')
+    subject = '*'
+    chan = 'Fz'
+    cooccuring = '*'
+    quart_night = '*'
+    stage='*'
+    speed = '*'
+
+    evs = ['Spindles','SlowWaves']
+    evs_cleans = ['Spindles','Slow-Waves']
+    
+    rows = []
+    for ev, ev_clean in zip(evs,evs_cleans):
+        angles = load_angles(event = ev, chan = chan)
+        N = angles.size
+        if not N == 0:
+            pval, mu, r = get_circ_features(angles, univals=univals)
+            stars = pval_stars(pval)
+            if ev_clean == 'Slow-Waves':
+                row = [ev_clean, N  , readable_pval(pval), stars, 'NA' , 'NA']
+            else:
+                row = [ev_clean, N  , readable_pval(pval), stars, mu , r]
+        else:
+            row = [ev_clean, N  , 'NA', 'NA', 'NA' , 'NA']
+        rows.append(row)
+    res = pd.DataFrame(rows, columns = ['Event','N','p-HR','Significance','Mean Direction (°)','Mean Vector Length'])
+    res.to_excel(save_folder / f'circ_stats_fig3A.xlsx', index = False)   
+
+# FIG 3B
+if compute_fig3B:
+    print('fig3B stats')
+    subject = '*'
+    chan = 'Fz'
+    cooccuring = '*'
+    quart_night = '*'
+    stage='*'
+
+    ev_looped = ['Slow spindles','Fast spindles']
+    ev_load_dict = {'Slow spindles':'Spindles_SS','Fast spindles':'Spindles_FS'}
+    
+    rows = []
+    for ev in ev_looped:
+        ev_load, speed = ev_load_dict[ev].split('_')
+        angles = load_angles(event = ev_load, chan = chan, speed=speed)
+        N = angles.size
+        if not N == 0:
+            pval, mu, r = get_circ_features(angles, univals=univals)
+            stars = pval_stars(pval)
+            row = [ev, N  , readable_pval(pval), stars, mu , r]
+        else:
+            row = [ev, N  , 'NA', 'NA', 'NA' , 'NA']
+        rows.append(row)
+    res = pd.DataFrame(rows, columns = ['Event','N','p-HR','Significance','Mean Direction (°)','Mean Vector Length'])
+    res.to_excel(save_folder / f'circ_stats_fig3B.xlsx', index = False)   
+
+
+# WASTE 
+
+
+
+# chan = 'Fz'
+# ev_looped = ['Slow spindles','Fast spindles','Slow-Waves']
+# ev_load_dict = {'Slow spindles':'Spindles_SS','Fast spindles':'Spindles_FS','Slow-Waves':'SlowWaves'}
+
+# rows = []
+# for chan in channels_events_select:
+#     for ev_clean in ev_looped:
+#         if not ev_clean == 'Slow-Waves':
+#             ev_load, speed = ev_load_dict[ev_clean].split('_')
+#         else:
+#             ev_load = ev_load_dict[ev_clean]
+#             speed = '--'
+
+#         angles = load_angles(subject = '*' , event = ev_load, cooccuring = '*', speed = speed, chan = chan, quart_night = '*', stage='*')
+#         N = angles.size
+#         if not N == 0:
+#             pval, mu, r = get_circ_features(angles, univals=univals)
+#             stars = pval_stars(pval)
+#             if ev_clean == 'Slow-Waves':
+#                 row = [chan, ev_clean, N  , readable_pval(pval), stars, 'NA' , 'NA']
+#             else:
+#                 row = [chan, ev_clean, N  , readable_pval(pval), stars, mu , r]
+#         else:
+#             row = [chan, ev_clean, N  , 'NA', 'NA', 'NA' , 'NA']
+#         rows.append(row)
+# stats_pooled = pd.DataFrame(rows, columns = ['Channel','Event','N','p-HR','Significance','Mean Direction (°)','Mean Vector Length'])
+# stats_pooled.to_excel(save_folder / f'supplementary_table_2_N2N3_{chan}.xlsx', index = False)
+
+
+
+      
+# ev_looped = ['Slow spindles','Fast spindles','Slow-Waves']
+# ev_load_dict = {'Slow spindles':'Spindles_SS','Fast spindles':'Spindles_FS','Slow-Waves':'SlowWaves'}
+# chan = '*'
+# rows = []
+# for quart in ['q1','q2','q3','q4']:
+#     for ev_clean in ev_looped:
+#         if not ev_clean == 'Slow-Waves':
+#             ev_load, speed = ev_load_dict[ev_clean].split('_')
+#         else:
+#             ev_load = ev_load_dict[ev_clean]
+#             speed = 'NA'
+
+#         angles = load_angles(subject = '*' , event = ev_load, cooccuring = '*', speed = speed, chan = chan, quart_night = quart, stage='*')
+#         N = angles.size
+#         if not N == 0:
+#             pval, mu, r = get_circ_features(angles, univals=univals)
+#             stars = pval_stars(pval)
+#             if ev_clean == 'Slow-Waves':
+#                 row = [ev_clean, quart , N  , readable_pval(pval), stars, 'NA' , 'NA']
+#             else:
+#                 row = [ev_clean, quart , N  , readable_pval(pval), stars, mu , r]
+#         else:
+#             row = [ev_clean, quart , N  , 'NA', 'NA', 'NA' , 'NA']                
+#         rows.append(row)
+# stats_pooled = pd.DataFrame(rows, columns = ['Event','Quart-Night','N','p-HR','Significance','Mean Direction (°)','Mean Vector Length'])
+# if chan == '*':
+#     chan_save = 'allchan'
+# stats_pooled.to_excel(save_folder / f'supplementary_table_3_N2N3_{chan_save}.xlsx', index = False)
+
+
+# # STATS SP SW POOLED
+# print('sp sw pooled')
+# for stage in compute_stage:
+#     rows = []
+#     for ev in ['Spindles','SlowWaves']:
+#         angles = load_angles(subject = '*' , event = ev, cooccuring = '*', speed = '*', chan = chan, quart_night = '*')
+#         N = angles.size
+#         if not N == 0:
+#             pval, mu, r = get_circ_features(angles, univals=univals)
+#             if ev == 'SlowWaves':
+#                 rows.append([ev, N ,  readable_pval(pval), pval_stars(pval), 'NA', 'NA'])
+#             else:
+#                 rows.append([ev, N ,  readable_pval(pval), pval_stars(pval), mu, r])
+#         else:
+#             rows.append([ev, N  , 'NA', 'NA' , 'NA'])            
+#     stats_pooled = pd.DataFrame(rows, columns = ['Event','N','p-HR','Significance','Mean Direction (°)','Mean Vector Length'])
+#     stats_pooled.to_excel(save_folder / f'circ_stats_spindles_slowwaves_pooled_{stage}.xlsx', index = False)
+
+
 
 # # STATS SP SW INDIVIDUAL
 # print('sp sw individual')
@@ -144,144 +394,3 @@ save_folder = base_folder / 'results' / 'events_coupling_figures' / 'stats'
 #     stats_pooled = pd.DataFrame(rows, columns = ['Event','speed','N','p-HR','Mean Direction (°)','Mean Vector Length'])
 #     stats_pooled.to_excel(save_folder / f'circ_stats_spindles_speed_pooled_{stage}.xlsx', index = False)
 
-
-# STATS SP and SW SPEED QUART-NIGHT POOLED
-# print('sp sw speed quart night')
-# ev_looped = ['Slow spindles','Fast spindles','Slow-Waves']
-# ev_load_dict = {'Slow spindles':'Spindles_SS','Fast spindles':'Spindles_FS','Slow-Waves':'SlowWaves'}
-
-# for stage in compute_stage:
-#     rows = []
-#     for quart in ['q1','q2','q3','q4']:
-#         for ev_clean in ev_looped:
-#             if not ev_clean == 'Slow-Waves':
-#                 ev_load, speed = ev_load_dict[ev_clean].split('_')
-#             else:
-#                 ev_load = ev_load_dict[ev_clean]
-#                 speed = 'NA'
-
-#             angles = load_angles(subject = '*' , event = ev_load, cooccuring = '*', speed = speed, chan = chan, quart_night = quart, stage=stage)
-#             N = angles.size
-#             if not N == 0:
-#                 pval, mu, r = get_circ_features(angles, univals=univals)
-#                 stars = pval_stars(pval)
-#                 if ev_clean == 'Slow-Waves':
-#                     row = [ev_clean, quart , N  , readable_pval(pval), stars, 'NA' , 'NA']
-#                 else:
-#                     row = [ev_clean, quart , N  , readable_pval(pval), stars, mu , r]
-#             else:
-#                 row = [ev_clean, quart , N  , 'NA', 'NA', 'NA' , 'NA']                
-#             rows.append(row)
-#     stats_pooled = pd.DataFrame(rows, columns = ['Event','Quart-Night','N','p-HR','Significance','Mean Direction (°)','Mean Vector Length'])
-#     stats_pooled.to_excel(save_folder / f'circ_stats_events_speed_quartnight_pooled_{stage}.xlsx', index = False)
-#     if stage == 'N2':
-#         stats_pooled.to_excel(save_folder / f'supplementary_table_3.xlsx', index = False)
-        
-ev_looped = ['Slow spindles','Fast spindles','Slow-Waves']
-ev_load_dict = {'Slow spindles':'Spindles_SS','Fast spindles':'Spindles_FS','Slow-Waves':'SlowWaves'}
-chan = '*'
-rows = []
-for quart in ['q1','q2','q3','q4']:
-    for ev_clean in ev_looped:
-        if not ev_clean == 'Slow-Waves':
-            ev_load, speed = ev_load_dict[ev_clean].split('_')
-        else:
-            ev_load = ev_load_dict[ev_clean]
-            speed = 'NA'
-
-        angles = load_angles(subject = '*' , event = ev_load, cooccuring = '*', speed = speed, chan = chan, quart_night = quart, stage='*')
-        N = angles.size
-        if not N == 0:
-            pval, mu, r = get_circ_features(angles, univals=univals)
-            stars = pval_stars(pval)
-            if ev_clean == 'Slow-Waves':
-                row = [ev_clean, quart , N  , readable_pval(pval), stars, 'NA' , 'NA']
-            else:
-                row = [ev_clean, quart , N  , readable_pval(pval), stars, mu , r]
-        else:
-            row = [ev_clean, quart , N  , 'NA', 'NA', 'NA' , 'NA']                
-        rows.append(row)
-stats_pooled = pd.DataFrame(rows, columns = ['Event','Quart-Night','N','p-HR','Significance','Mean Direction (°)','Mean Vector Length'])
-if chan == '*':
-    chan_save = 'allchan'
-stats_pooled.to_excel(save_folder / f'supplementary_table_3_N2N3_{chan_save}.xlsx', index = False)
-
-
-# # STATS SP SW POOLED
-# print('sp sw pooled')
-# for stage in compute_stage:
-#     rows = []
-#     for ev in ['Spindles','SlowWaves']:
-#         angles = load_angles(subject = '*' , event = ev, cooccuring = '*', speed = '*', chan = chan, quart_night = '*')
-#         N = angles.size
-#         if not N == 0:
-#             pval, mu, r = get_circ_features(angles, univals=univals)
-#             if ev == 'SlowWaves':
-#                 rows.append([ev, N ,  readable_pval(pval), pval_stars(pval), 'NA', 'NA'])
-#             else:
-#                 rows.append([ev, N ,  readable_pval(pval), pval_stars(pval), mu, r])
-#         else:
-#             rows.append([ev, N  , 'NA', 'NA' , 'NA'])            
-#     stats_pooled = pd.DataFrame(rows, columns = ['Event','N','p-HR','Significance','Mean Direction (°)','Mean Vector Length'])
-#     stats_pooled.to_excel(save_folder / f'circ_stats_spindles_slowwaves_pooled_{stage}.xlsx', index = False)
-
-
-
-# STATS SP SPEED SW POOLED
-# print('sp speed sw pooled')
-# ev_looped = ['Slow spindles','Fast spindles','Slow-Waves']
-# ev_load_dict = {'Slow spindles':'Spindles_SS','Fast spindles':'Spindles_FS','Slow-Waves':'SlowWaves'}
-# for stage in compute_stage:
-#     rows = []
-#     for chan in channels_events_select:
-#         for ev_clean in ev_looped:
-#             if not ev_clean == 'Slow-Waves':
-#                 ev_load, speed = ev_load_dict[ev_clean].split('_')
-#             else:
-#                 ev_load = ev_load_dict[ev_clean]
-#                 speed = '--'
-
-#             angles = load_angles(subject = '*' , event = ev_load, cooccuring = '*', speed = speed, chan = chan, quart_night = '*', stage=stage)
-#             N = angles.size
-#             if not N == 0:
-#                 pval, mu, r = get_circ_features(angles, univals=univals)
-#                 stars = pval_stars(pval)
-#                 if ev_clean == 'Slow-Waves':
-#                     row = [chan, ev_clean, N  , readable_pval(pval), stars, 'NA' , 'NA']
-#                 else:
-#                     row = [chan, ev_clean, N  , readable_pval(pval), stars, mu , r]
-#             else:
-#                 row = [chan, ev_clean, N  , 'NA', 'NA', 'NA' , 'NA']
-#             rows.append(row)
-#     stats_pooled = pd.DataFrame(rows, columns = ['Channel','Event','N','p-HR','Significance','Mean Direction (°)','Mean Vector Length'])
-#     stats_pooled.to_excel(save_folder / f'circ_stats_spindles_speed_slowwaves_pooled_{stage}.xlsx', index = False)
-#     if stage == 'N2':
-#         stats_pooled.to_excel(save_folder / f'supplementary_table_2.xlsx', index = False)
-
-# chan = 'Fz'
-# ev_looped = ['Slow spindles','Fast spindles','Slow-Waves']
-# ev_load_dict = {'Slow spindles':'Spindles_SS','Fast spindles':'Spindles_FS','Slow-Waves':'SlowWaves'}
-
-# rows = []
-# for chan in channels_events_select:
-#     for ev_clean in ev_looped:
-#         if not ev_clean == 'Slow-Waves':
-#             ev_load, speed = ev_load_dict[ev_clean].split('_')
-#         else:
-#             ev_load = ev_load_dict[ev_clean]
-#             speed = '--'
-
-#         angles = load_angles(subject = '*' , event = ev_load, cooccuring = '*', speed = speed, chan = chan, quart_night = '*', stage='*')
-#         N = angles.size
-#         if not N == 0:
-#             pval, mu, r = get_circ_features(angles, univals=univals)
-#             stars = pval_stars(pval)
-#             if ev_clean == 'Slow-Waves':
-#                 row = [chan, ev_clean, N  , readable_pval(pval), stars, 'NA' , 'NA']
-#             else:
-#                 row = [chan, ev_clean, N  , readable_pval(pval), stars, mu , r]
-#         else:
-#             row = [chan, ev_clean, N  , 'NA', 'NA', 'NA' , 'NA']
-#         rows.append(row)
-# stats_pooled = pd.DataFrame(rows, columns = ['Channel','Event','N','p-HR','Significance','Mean Direction (°)','Mean Vector Length'])
-# stats_pooled.to_excel(save_folder / f'supplementary_table_2_N2N3.xlsx', index = False)
