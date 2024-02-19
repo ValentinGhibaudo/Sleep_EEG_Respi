@@ -110,20 +110,24 @@ univals = p['univals']
 save_folder = base_folder / 'autres' / 'article_N20' / 'clin_neurophy_submission2' / 'reviewing_2'
 
 
+
 compute_S3 = False
 compute_S2 = False
-compute_fig3A = True
-compute_fig3B = True
+compute_fig3A = False
+compute_fig3B = False
+
+compute_for_reviewer_3 = True
 
 
 # SUPPLEMENTARY S3
+
 if compute_S3:
     print('S3')
     ev_looped = ['Slow spindles','Fast spindles','Slow-Waves']
     ev_load_dict = {'Slow spindles':'Spindles_SS','Fast spindles':'Spindles_FS','Slow-Waves':'SlowWaves'}
 
     subject = '*'
-    chan = 'Fz'
+    chan = '*'
     stage = '*'
     cooccuring = '*'
 
@@ -157,8 +161,6 @@ if compute_S3:
             rows.append(row)
     stats_pooled = pd.DataFrame(rows, columns = ['Event','Night quartile','N','p-HR','Significance','Mean Direction (°)','Mean Vector Length'])
     stats_pooled.to_excel(save_folder / f'supplementary_table_3.xlsx', index = False)
-
-
 
 
   
@@ -266,6 +268,7 @@ if compute_fig3B:
         rows.append(row)
     res = pd.DataFrame(rows, columns = ['Event','N','p-HR','Significance','Mean Direction (°)','Mean Vector Length'])
     res.to_excel(save_folder / f'circ_stats_fig3B.xlsx', index = False)   
+
 
 
 # WASTE 
@@ -394,3 +397,140 @@ if compute_fig3B:
 #     stats_pooled = pd.DataFrame(rows, columns = ['Event','speed','N','p-HR','Mean Direction (°)','Mean Vector Length'])
 #     stats_pooled.to_excel(save_folder / f'circ_stats_spindles_speed_pooled_{stage}.xlsx', index = False)
 
+
+
+# FOR ANSWER TO REVIEWER 3
+if compute_for_reviewer_3:
+    
+    bonferroni_factor = 49 # number of p-values that are computed in the paper
+    
+#     print('S3')
+    
+#     ev_looped = ['Slow spindles','Fast spindles','Slow-Waves']
+#     ev_load_dict = {'Slow spindles':'Spindles_SS','Fast spindles':'Spindles_FS','Slow-Waves':'SlowWaves'}
+
+#     subject = '*'
+#     chan = '*'
+#     stage = '*'
+#     cooccuring = '*'
+
+#     rows = []
+#     for quart in ['q1','q2','q3','q4']:
+#         print(quart)
+#         for ev_clean in ev_looped:
+#             if not ev_clean == 'Slow-Waves':
+#                 ev_load, speed = ev_load_dict[ev_clean].split('_')
+#             else:
+#                 ev_load = ev_load_dict[ev_clean]
+#                 speed = 'NA'
+
+#             angles = load_angles(subject = subject , 
+#                                  event = ev_load, 
+#                                  cooccuring = cooccuring, 
+#                                  speed = speed, 
+#                                  chan = chan, 
+#                                  quart_night = quart, 
+#                                  stage=stage)
+#             N = angles.size
+#             pval_uncorrected, mu, r = get_circ_features(angles, univals=univals)
+#             pval_corrected = pval_uncorrected * bonferroni_factor
+
+#             if ev_clean == 'Slow-Waves':
+#                 row = [ev_clean, quart , N  , pval_uncorrected, pval_corrected, 'NA' , 'NA']
+#             else:
+#                 row = [ev_clean, quart , N  , pval_uncorrected, pval_corrected, mu , r]             
+#             rows.append(row)
+#     stats_pooled = pd.DataFrame(rows, columns = ['Event','Night quartile','N','p-HR uncorrected','p-HR Bonferroni corrected','Mean Direction (°)','Mean Vector Length'])
+#     stats_pooled.to_excel(save_folder / f'supplementary_table_3_pvalues_corrected.xlsx', index = False)
+
+    print('S2')
+    ev_looped = ['Slow spindles','Fast spindles','Slow-Waves']
+    ev_load_dict = {'Slow spindles':'Spindles_SS','Fast spindles':'Spindles_FS','Slow-Waves':'SlowWaves'}
+
+    subject = '*'
+    cooccuring = '*'
+    quart_night = '*'
+    stage='*'
+
+
+    rows = []
+    for chan in channels_events_select:
+        print(chan)
+        for ev_clean in ev_looped:
+            if not ev_clean == 'Slow-Waves':
+                ev_load, speed = ev_load_dict[ev_clean].split('_')
+            else:
+                ev_load = ev_load_dict[ev_clean]
+                speed = '--'
+
+            angles = load_angles(subject = subject , 
+                                 event = ev_load, 
+                                 cooccuring = cooccuring, 
+                                 speed = speed, 
+                                 chan = chan, 
+                                 quart_night = quart_night, 
+                                 stage=stage)
+            N = angles.size
+            pval_uncorrected, mu, r = get_circ_features(angles, univals=univals)
+            pval_corrected = pval_uncorrected * bonferroni_factor
+            if ev_clean == 'Slow-Waves':
+                row = [chan, ev_clean, N  , pval_uncorrected, pval_corrected, 'NA' , 'NA']
+            else:
+                row = [chan, ev_clean, N  , pval_uncorrected, pval_corrected, mu , r]
+            rows.append(row)
+    stats_pooled = pd.DataFrame(rows, columns = ['Channel','Event','N','p-HR uncorrected','p-HR Bonferroni corrected','Mean Direction (°)','Mean Vector Length'])
+    stats_pooled.to_excel(save_folder / f'supplementary_table_2_pvalues_corrected.xlsx', index = False)   
+
+
+    # FIG 3A
+    print('fig3A stats')
+    subject = '*'
+    chan = 'Fz'
+    cooccuring = '*'
+    quart_night = '*'
+    stage='*'
+    speed = '*'
+
+    evs = ['Spindles','SlowWaves']
+    evs_cleans = ['Spindles','Slow-Waves']
+    
+    rows = []
+    for ev, ev_clean in zip(evs,evs_cleans):
+        angles = load_angles(event = ev, chan = chan)
+        N = angles.size
+
+        pval_uncorrected, mu, r = get_circ_features(angles, univals=univals)
+        pval_corrected = pval_uncorrected * bonferroni_factor
+        if ev_clean == 'Slow-Waves':
+            row = [ev_clean, N  , pval_uncorrected, pval_corrected, 'NA' , 'NA']
+        else:
+            row = [ev_clean, N  , pval_uncorrected, pval_corrected, mu , r]
+
+        rows.append(row)
+    res = pd.DataFrame(rows, columns = ['Event','N','p-HR uncorrected','p-HR Bonferroni corrected','Mean Direction (°)','Mean Vector Length'])
+    res.to_excel(save_folder / f'circ_stats_fig3A_pvalues_corrected.xlsx', index = False)   
+
+    # FIG 3B
+    print('fig3B stats')
+    subject = '*'
+    chan = 'Fz'
+    cooccuring = '*'
+    quart_night = '*'
+    stage='*'
+
+    ev_looped = ['Slow spindles','Fast spindles']
+    ev_load_dict = {'Slow spindles':'Spindles_SS','Fast spindles':'Spindles_FS'}
+    
+    rows = []
+    for ev in ev_looped:
+        ev_load, speed = ev_load_dict[ev].split('_')
+        angles = load_angles(event = ev_load, chan = chan, speed=speed)
+        N = angles.size
+
+        pval_uncorrected, mu, r = get_circ_features(angles, univals=univals)
+        pval_corrected = pval_uncorrected * bonferroni_factor
+        row = [ev, N  , pval_uncorrected, pval_corrected, mu , r]
+
+        rows.append(row)
+    res = pd.DataFrame(rows, columns = ['Event','N','p-HR uncorrected','p-HR Bonferroni corrected','Mean Direction (°)','Mean Vector Length'])
+    res.to_excel(save_folder / f'circ_stats_fig3B_pvalues_corrected.xlsx', index = False) 
