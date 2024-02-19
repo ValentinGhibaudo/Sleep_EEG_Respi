@@ -6,6 +6,9 @@ from configuration import base_folder
 from params import *
 
 def init_da(coords, name = None):
+    """
+    Just initialize an empty xarray full of NaN according to coordinates.
+    """
     dims = list(coords.keys())
     coords = coords
 

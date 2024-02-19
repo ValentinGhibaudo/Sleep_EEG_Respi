@@ -7,6 +7,7 @@ from configuration import base_folder
 from rsp_detection import resp_tag_job
 from detect_sleep_events import spindles_tag_job, slowwaves_tag_job
 
+# Script aiming to compute huge correlation matrices between features of slow-waves/spindles compared to respiratory features of the co-occuring respiratory cycles
 
 def corr_matrix_resp_events(resp, events, event_type, ax=None):
     resp_features_to_include = ['cycle_duration','inspi_duration','expi_duration','cycle_freq','cycle_ratio','inspi_amplitude','expi_amplitude','inspi_volume','expi_volume']

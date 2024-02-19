@@ -1,6 +1,8 @@
 import numpy as np
 import scipy.interpolate
 
+# Tool used to rescale time axis of time-frequency sigma epochs into respiratory cycle phase axis
+
 def deform_to_cycle_template(data, times, cycle_times, nb_point_by_cycle=40, inspi_ratio = 0.4):
     """
     Input:

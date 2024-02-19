@@ -25,7 +25,7 @@ from myqt import QT, DebugDecorator
 from preproc_staging import preproc_job, hypnogram_job
 from rsp_detection import resp_features_job
 from detect_sleep_events import spindles_detect_job, slowwaves_detect_job
-
+# Just a viewer of raw or preprocessed data + detections to check for right functionning of processes
 
 ### PARAMS
 mono_chans = ['Fz','Fp1','Fp2','C4','C3','Cz','Pz']

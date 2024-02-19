@@ -12,7 +12,7 @@ import inspect
 import joblib
 import xarray as xr
 
-
+# Script making tools for allowing the making of interconnected (for safe science) computing jobs, also sendable to computers for parallel (so fast) computing
 job_list = {}
 
 try:

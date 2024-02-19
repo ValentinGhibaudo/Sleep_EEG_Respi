@@ -8,24 +8,7 @@ from rsp_detection import resp_tag_job
 import jobtools
 
 
-###### USEFUL FUNCTIONS
-
-def get_phase_angles(rsp_features, event_times):
-    list_of_angles = [] # phase angles of events found in each cycle are stored in a list
-    for i, cycle in rsp_features.iterrows(): # loop on respi cycles
-        start = cycle['start_time'] # get start time of the cycle
-        stop = cycle['stop_time'] # get stop time of the cycle
-        duration = cycle['cycle_duration'] # get duration of the cycle
-        mask_of_the_cycle = (event_times >= start) & (event_times < stop) # mask events between start and stop
-        if sum(mask_of_the_cycle) != 0: # do the next steps if some events have been found during the cycle
-            events_times_of_the_cycle = event_times[mask_of_the_cycle] # keep the events of the cycle
-            relative_times = (events_times_of_the_cycle - start) / duration # = time after start / duration = relative times between 0 and 1
-            phase_angles = relative_times * 2*np.pi # relative times to phase angles between 0 and 2Pi
-            list_of_angles.extend(phase_angles)
-    return np.array(list_of_angles)
-
-
-# JOB SPINDLES DETECTION
+# JOB EVENTS COUPLING TO RESPI CYCLE
 
 def events_to_resp_coupling(run_key, **p):
 
@@ -53,9 +36,9 @@ def events_to_resp_coupling(run_key, **p):
             rsp_features_with_the_event = rsp_features[rsp_features['SlowWave_Tag'] == 1] # keep only rsp cycles with slowwaves inside
 
         for i, row in rsp_features_with_the_event.iterrows():
-            mask_ev_in_cycle = (events[ts_label] >= row['start_time']) & (events[ts_label] < row['stop_time'])
-            ev_in_cycle = events[mask_ev_in_cycle]
-            events_angles.loc[ev_in_cycle.index, 'Resp_Angle'] = ((ev_in_cycle[ts_label].values - row['start_time']) / row['cycle_duration']) * 2 * np.pi
+            mask_ev_in_cycle = (events[ts_label] >= row['start_time']) & (events[ts_label] < row['stop_time']) # mask events of the current respiratory cycle time window
+            ev_in_cycle = events[mask_ev_in_cycle] # keep events of the current respiratory cycle time window by applying the mask
+            events_angles.loc[ev_in_cycle.index, 'Resp_Angle'] = ((ev_in_cycle[ts_label].values - row['start_time']) / row['cycle_duration']) * 2 * np.pi # Transform absolute time of event to relative time in the resp cycle
 
         concat.append(events_angles[['Participant','Event_type','Channel','Stage_Letter','night_quartile','cooccuring','Sp_Speed','Resp_Angle']])
 

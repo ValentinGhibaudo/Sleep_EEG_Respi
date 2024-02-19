@@ -16,6 +16,9 @@ import numba
 
 @numba.jit(parallel=True, nopython = False)
 def HR2T(sample):
+    """
+    Compute the test value from a sample of angles in radians
+    """
     n = sample.size
     # total = 0
     local_sums = np.zeros(n)
@@ -40,6 +43,9 @@ def HR2T(sample):
 #     return T
 
 def HR2P(sample, univals = 1000, seed=None, progress_bar = False): # Hermans-Rasson 2 p-value
+    """
+    Compute the p value from a sample of angles in radians
+    """
     rng = np.random.default_rng(seed=seed)
     Tsample = HR2T(sample)
     n = sample.size

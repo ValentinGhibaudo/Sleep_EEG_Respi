@@ -13,28 +13,6 @@ from rsp_detection import resp_tag_job
 
 
 
-# p = events_coupling_figs_params
-# stage = p['stage']
-# subjects = run_keys
-# save_article = p['save_article']
-# univals = p['univals']
-# with_stats = p['with_stats']
-
-# if save_article:
-#     save_folder = article_folder 
-#     extension = '.tif'
-#     dpis = 300
-#     with_title = False
-#     print('SAVING FIGURES IN ARTICLE FOLDER')
-# else:
-#     save_folder = base_folder / 'results' / 'events_coupling_figures'
-#     extension = '.png'
-#     dpis = 300
-#     with_title = True
-#     print('SAVING FIGURES IN RESULTS FOLDER')
-
-#####
-
 def get_circ_features(angles, univals=1000, seed=None, progress_bar = False): # angles in radians
     pval = HR2P(angles, univals=univals, seed=seed, progress_bar=progress_bar)
 
