@@ -197,7 +197,7 @@ def get_viewer_from_run_key(run_key, parent=None, with_video=False):
 
 def test_get_viewer():
     
-    run_key = 'S5'
+    run_key = 'S20'
 
     app = ev.mkQApp()
     win = get_viewer_from_run_key(run_key)
