@@ -216,7 +216,3 @@ sigma_coupling_stats_params = {
     'sigma_coupling_params':sigma_coupling_params,
     'chan_sel':sigma_coupling_figs_params['sigma_coupling_chan']
 }
-
-
-
-
