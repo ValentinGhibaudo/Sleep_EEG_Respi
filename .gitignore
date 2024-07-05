@@ -1,4 +1,7 @@
-__pycache__
-.ipynb_checkpoints
-*.out
-slurm_scripts
+__pycache__/
+old_scripts/
+slurm_scripts/
+.ipynb_checkpoints/
+sandbox.ipynb
+rsa_study.ipynb
+rsa_study.py
