@@ -41,7 +41,7 @@ Pipeline:
 - events_coupling.py
     - event_coupling_job :  # Compute phase angles timestamps of spindles or slowwaves along respiration phase (need spindles_tag_job + slowwaves_tag_job + resp_tag_job)
 
-- events_coupling_stats.py # Compute circular stats of phase angles of event occurence according to respiration phase # TO MODIF
+- events_coupling_stats.py # Compute circular stats of phase angles of event occurence according to respiration phase 
 - events_coupling_figs.py # Polarplot distributions of events according to respiration phase (need event_coupling_job + resp_tag_job)
 
 # Sigma coupling to respiration
