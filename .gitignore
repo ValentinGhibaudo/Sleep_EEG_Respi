@@ -2,5 +2,3 @@ __pycache__/
 slurm_scripts/
 .ipynb_checkpoints/
 sandbox.ipynb
-rsa_study.ipynb
-rsa_study.py
